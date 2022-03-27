@@ -5,9 +5,10 @@ namespace DSTvmFarm
 {
     class Program
     {
+        public static Watcher watcher = new Watcher();
+
         static void Main(string[] args)
         {
-            Watcher watcher = new Watcher();
             watcher.StartWatch();
         }
     }

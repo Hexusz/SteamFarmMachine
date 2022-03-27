@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 
 namespace DSTvmFarm.Core
 {
@@ -15,6 +16,18 @@ namespace DSTvmFarm.Core
             }
 
             return false;
+        }
+
+        public static void SteamStart()
+        {
+            string target = Program.watcher.MainConfig.SteamPath;
+            try
+            {
+                Process.Start(Path.Combine(target, "steam.exe"));
+            }
+            catch (Exception ex)
+            {
+            }
         }
     }
 }
