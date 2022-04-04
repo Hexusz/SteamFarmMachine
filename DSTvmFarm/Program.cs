@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Text;
 
 namespace DSTvmFarm
 {
@@ -9,6 +10,8 @@ namespace DSTvmFarm
 
         static void Main(string[] args)
         {
+            Console.OutputEncoding = Encoding.UTF8;
+
             watcher.StartWatch();
             Console.ReadKey();
         }

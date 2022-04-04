@@ -117,21 +117,21 @@ namespace DSTvmFarm.Core
 
             Thread.Sleep(10);
 
-            var code2fa = GenerateSteamGuardCodeForTime(DateTime.Now.Ticks, Program.watcher.Accounts[index].SharedSecret);
+            var code2fa = GenerateSteamGuardCodeForTime(GetSystemUnixTime(), Program.watcher.Accounts[index].SharedSecret);
             foreach (char c in code2fa)
             {
                 Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
                 Thread.Sleep(10);
 
                 // Can also send keys to login window handle, but nothing works unless it is the foreground window.
-                Utils.SendCharacter(steamGuardWindow.RawPtr, Program.watcher.MainConfig.VirtualInputMethod, c);
+                Utils.SendCharacter(steamGuardWindow.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod, c);
             }
 
             Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
 
             Thread.Sleep(10);
 
-            Utils.SendEnter(steamGuardWindow.RawPtr, Program.watcher.MainConfig.VirtualInputMethod);
+            Utils.SendEnter(steamGuardWindow.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
 
             // Restore CapsLock back if CapsLock is off before we start typing.
             //if (settings.User.HandleMicrosoftIME && !capsLockEnabled)
@@ -203,5 +203,9 @@ namespace DSTvmFarm.Core
             return Encoding.UTF8.GetString(codeArray);
         }
 
+        public static long GetSystemUnixTime()
+        {
+            return (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+        }
     }
 }

@@ -34,7 +34,7 @@ namespace DSTvmFarm.Core
                     var defaulConfig = new AppConfig()
                     {
                         SteamPath = @"C:\Program Files (x86)\Steam",
-                        VirtualInputMethod = Program.watcher.MainConfig.VirtualInputMethod
+                        VirtualInputMethod = 0
                     };
 
                     await JsonSerializer.SerializeAsync<AppConfig>(fs, defaulConfig);
