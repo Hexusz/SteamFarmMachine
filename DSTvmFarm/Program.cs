@@ -10,6 +10,7 @@ namespace DSTvmFarm
         static void Main(string[] args)
         {
             watcher.StartWatch();
+            Console.ReadKey();
         }
     }
 }
