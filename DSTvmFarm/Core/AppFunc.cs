@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Text.Json;
 using System.Threading.Tasks;
 using DSTvmFarm.Entities;
+using Newtonsoft.Json;
 using NLog.Fluent;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace DSTvmFarm.Core
 {
@@ -58,7 +59,7 @@ namespace DSTvmFarm.Core
                     BinaryReader br = new BinaryReader(fsRead);
                     long numBytes = new FileInfo(accFile).Length;
                     string decryptedText = DecryptStringFromBytes(br.ReadBytes((int)numBytes));
-                    Account deserializeAccount = Newtonsoft.Json.JsonConvert.DeserializeObject<Account>(decryptedText);
+                    Account deserializeAccount = JsonConvert.DeserializeObject<Account>(decryptedText);
                     acc.Add(deserializeAccount);
                     fsRead.Close();
                 }
@@ -95,5 +96,9 @@ namespace DSTvmFarm.Core
             return decryptText;
         }
 
+        public static long GetSystemUnixTime()
+        {
+            return (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+        }
     }
 }

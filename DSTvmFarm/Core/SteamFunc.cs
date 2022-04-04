@@ -47,7 +47,6 @@ namespace DSTvmFarm.Core
 
             StringBuilder parametersBuilder = new StringBuilder();
 
-            
             parametersBuilder.Append($" -login {Program.watcher.Accounts[index].Name} {Program.watcher.Accounts[index].Password}");
 
 
@@ -107,23 +106,14 @@ namespace DSTvmFarm.Core
             NLogger.Log.Info("It is idle now, typing code...");
 
             Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
-
-            // Enable Caps-Lock, to prevent IME problems.
-            //bool capsLockEnabled = System.Windows.Forms.Control.IsKeyLocked(System.Windows.Forms.Keys.CapsLock);
-            //if (settings.User.HandleMicrosoftIME && !capsLockEnabled)
-            //{
-            //    Utils.SendCapsLockGlobally();
-            //}
-
             Thread.Sleep(10);
 
-            var code2fa = GenerateSteamGuardCodeForTime(GetSystemUnixTime(), Program.watcher.Accounts[index].SharedSecret);
+            var code2fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), Program.watcher.Accounts[index].SharedSecret);
             foreach (char c in code2fa)
             {
                 Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
                 Thread.Sleep(10);
 
-                // Can also send keys to login window handle, but nothing works unless it is the foreground window.
                 Utils.SendCharacter(steamGuardWindow.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod, c);
             }
 
@@ -133,16 +123,8 @@ namespace DSTvmFarm.Core
 
             Utils.SendEnter(steamGuardWindow.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
 
-            // Restore CapsLock back if CapsLock is off before we start typing.
-            //if (settings.User.HandleMicrosoftIME && !capsLockEnabled)
-            //{
-            //    Utils.SendCapsLockGlobally();
-            //}
-
-            // Need a little pause here to more reliably check for popup later.
             Thread.Sleep(5000);
 
-            // Check if we still have a 2FA popup, which means the previous one failed.
             steamGuardWindow = Utils.GetSteamGuardWindow();
 
             if (tryCount < maxRetry && steamGuardWindow.IsValid)
@@ -153,7 +135,7 @@ namespace DSTvmFarm.Core
             }
             else if (tryCount == maxRetry && steamGuardWindow.IsValid)
             {
-                NLogger.Log.Error("2FA Failed Please wait or bring the Steam Guard"); 
+                NLogger.Log.Error("2FA Failed Please wait or bring the Steam Guard");
                 Type2FA(index, tryCount + 1);
             }
             else if (tryCount == maxRetry + 1 && steamGuardWindow.IsValid)
@@ -201,11 +183,6 @@ namespace DSTvmFarm.Core
                 return null; //Change later, catch-alls are bad!
             }
             return Encoding.UTF8.GetString(codeArray);
-        }
-
-        public static long GetSystemUnixTime()
-        {
-            return (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
         }
     }
 }
