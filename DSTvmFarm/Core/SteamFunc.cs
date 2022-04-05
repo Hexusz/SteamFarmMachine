@@ -99,7 +99,7 @@ namespace DSTvmFarm.Core
 
             Thread.Sleep(3000);
 
-            NLogger.Log.Info("Вводим 2FA код, аккаунт " + Program.watcher.Accounts[index].Name);
+            NLogger.Log.Info("Вводим 2FA код");
 
             Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
             Thread.Sleep(10);

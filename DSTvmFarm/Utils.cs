@@ -75,6 +75,20 @@ namespace DSTvmFarm
                  wh.GetWindowText().StartsWith("Steam — ")));
         }
 
+        public static WindowHandle GetDstWindow()
+        {
+            return TopLevelWindowUtils.FindWindow(wh =>
+                wh.GetClassName().Equals("opengles2.0") &&
+                (wh.GetWindowText().StartsWith("Don't Starve Together")));
+        }
+
+        public static WindowHandle GetDstInstallWindow()
+        {
+            return TopLevelWindowUtils.FindWindow(wh =>
+                wh.GetClassName().Equals("vguiPopupWindow") &&
+                (wh.GetWindowText().StartsWith("Install - Don't Starve Together")));
+        }
+
         public static Process WaitForSteamProcess(WindowHandle windowHandle)
         {
             Process process = null;
