@@ -17,7 +17,7 @@ namespace DSTvmFarm.Core
 
         private static int maxRetry = 2;
 
-        public static void Login(int index, int tryCount)
+        public static async Task<bool> Login(int index)
         {
 
             ProcessStartInfo stopInfo = new ProcessStartInfo
@@ -47,7 +47,7 @@ namespace DSTvmFarm.Core
 
             StringBuilder parametersBuilder = new StringBuilder();
 
-            parametersBuilder.Append($" -login {Program.watcher.Accounts[index].Name} {Program.watcher.Accounts[index].Password}");
+            parametersBuilder.Append($" -silent -login {Program.watcher.Accounts[index].Name} {Program.watcher.Accounts[index].Password}");
 
 
             ProcessStartInfo startInfo = new ProcessStartInfo
@@ -66,16 +66,18 @@ namespace DSTvmFarm.Core
             catch (Exception ex)
             {
                 NLogger.Log.Warn("Не удалось запустить Steam " + ex.Message);
-                return;
+                return false;
             }
 
-            Task.Run(() => Type2FA(index, 0));
+            var t = Type2Fa(index, 0);
+            var res = await t;
+            NLogger.Log.Info($"{(res ? ("Успешная авторизация " + Program.watcher.Accounts[index].Name) : ("Ошибка авторизации " + Program.watcher.Accounts[index].Name))}");
+
+            return res;
         }
 
-        private static void Type2FA(int index, int tryCount)
+        private static async Task<bool> Type2Fa(int index, int tryCount)
         {
-            // Need both the Steam Login and Steam Guard windows.
-            // Can't focus the Steam Guard window directly.
             var steamLoginWindow = Utils.GetSteamLoginWindow();
             var steamGuardWindow = Utils.GetSteamGuardWindow();
 
@@ -85,25 +87,19 @@ namespace DSTvmFarm.Core
                 steamLoginWindow = Utils.GetSteamLoginWindow();
                 steamGuardWindow = Utils.GetSteamGuardWindow();
 
-                // Check for Steam warning window.
                 var steamWarningWindow = Utils.GetSteamWarningWindow();
                 if (steamWarningWindow.IsValid)
                 {
-                    //Cancel the 2FA process since Steam connection is likely unavailable. 
-                    return;
+                    return false;
                 }
             }
-
-            NLogger.Log.Info("Found window.");
 
             Process steamGuardProcess = Utils.WaitForSteamProcess(steamGuardWindow);
             steamGuardProcess.WaitForInputIdle();
 
-            // Wait a bit for the window to fully initialize just in case.
             Thread.Sleep(3000);
 
-            // Generate 2FA code, then send it to the client.
-            NLogger.Log.Info("It is idle now, typing code...");
+            NLogger.Log.Info("Вводим 2FA код, аккаунт " + Program.watcher.Accounts[index].Name);
 
             Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
             Thread.Sleep(10);
@@ -127,31 +123,29 @@ namespace DSTvmFarm.Core
 
             steamGuardWindow = Utils.GetSteamGuardWindow();
 
-            if (tryCount < maxRetry && steamGuardWindow.IsValid)
+            if (tryCount <= maxRetry && steamGuardWindow.IsValid)
             {
-                NLogger.Log.Info("2FA code failed, retrying...");
-                Type2FA(index, tryCount + 1);
-                return;
-            }
-            else if (tryCount == maxRetry && steamGuardWindow.IsValid)
-            {
-                NLogger.Log.Error("2FA Failed Please wait or bring the Steam Guard");
-                Type2FA(index, tryCount + 1);
+                NLogger.Log.Info("2FA Ошибка кода, повтор");
+                var t = Type2Fa(index, tryCount + 1);
+                return await t;
             }
             else if (tryCount == maxRetry + 1 && steamGuardWindow.IsValid)
             {
-                NLogger.Log.Error("2FA Failed Please verify your shared secret is correct!");
+                NLogger.Log.Error("2FA Ошибка, проверьте данные аккаунта");
+                return false;
             }
+
+            return !steamGuardWindow.IsValid;
         }
 
-        public static string GenerateSteamGuardCodeForTime(long time, string SharedSecret)
+        public static string GenerateSteamGuardCodeForTime(long time, string sharedSecret)
         {
-            if (SharedSecret == null || SharedSecret.Length == 0)
+            if (sharedSecret == null || sharedSecret.Length == 0)
             {
                 return "";
             }
 
-            string sharedSecretUnescaped = Regex.Unescape(SharedSecret);
+            string sharedSecretUnescaped = Regex.Unescape(sharedSecret);
             byte[] sharedSecretArray = Convert.FromBase64String(sharedSecretUnescaped);
             byte[] timeArray = new byte[8];
 

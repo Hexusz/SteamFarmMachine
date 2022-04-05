@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using DSTvmFarm.Core;
 using DSTvmFarm.Entities;
 using NLog;
@@ -11,7 +12,7 @@ namespace DSTvmFarm
         public AppConfig MainConfig { get; set; }
         public List<Account> Accounts { get; set; }
 
-        public void StartWatch()
+        public async void StartWatch()
         {
             NLogger.Log.Info("Запуск приложения");
             MainConfig = AppFunc.LoadConfig().Result;
@@ -19,7 +20,12 @@ namespace DSTvmFarm
             Accounts = AppFunc.LoadAccounts().Result;
             NLogger.Log.Info("Загрузка аккаунтов завершена");
 
-            SteamFunc.Login(0, 1);
+            var steamLogin = SteamFunc.Login(0);
+
+            if (await steamLogin)
+            {
+                NLogger.Log.Info("FARM");
+            }
         }
     }
 }

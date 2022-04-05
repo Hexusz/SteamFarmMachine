@@ -80,7 +80,7 @@ namespace DSTvmFarm
             Process process = null;
 
             // Wait for valid process to wait for input idle.
-            NLogger.Log.Info("Waiting for it to be idle.");
+            NLogger.Log.Info("Ждем окно Steam Guard");
             while (process == null)
             {
                 int procId = 0;
