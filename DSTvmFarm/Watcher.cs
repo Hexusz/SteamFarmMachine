@@ -16,11 +16,10 @@ namespace DSTvmFarm
         public async void StartWatch()
         {
             NLogger.Log.Info("Запуск приложения");
+            AppFunc.LoadCryptKey();
             MainConfig = AppFunc.LoadConfig().Result;
-            NLogger.Log.Info("Загрузка конфига завершена");
             Accounts = AppFunc.LoadAccounts().Result.OrderBy(x => x.Name).ToList();
-            NLogger.Log.Info("Загрузка аккаунтов завершена");
-
+            
             var index = 0;
             foreach (var account in Accounts)
             {

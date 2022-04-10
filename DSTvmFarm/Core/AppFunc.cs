@@ -13,9 +13,26 @@ namespace DSTvmFarm.Core
 {
     public static class AppFunc
     {
-        private static readonly byte[] Key = Convert.FromBase64String("q9OwdZag1163OJqwjVAsIovXfSWG98m+sPSxwJecfe4=");
+        private static byte[] _key;
 
-        private static readonly byte[] IV = Convert.FromBase64String("htJhjtmZs1Aq0UTbuyWXrw==");
+        private static byte[] _iv;
+
+        public static void LoadCryptKey()
+        {
+            var keyPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "AccKey.key");
+            if (File.Exists(keyPath))
+            {
+                using FileStream fs = new FileStream(keyPath, FileMode.OpenOrCreate);
+                var accKey = JsonSerializer.DeserializeAsync<AccKey>(fs);
+                _key = accKey.Result.Key;
+                _iv = accKey.Result.IV;
+                NLogger.Log.Info("Файл ключа загружен");
+            }
+            else
+            {
+                NLogger.Log.Fatal("Файл ключа не обнаружен");
+            }
+        }
 
         public static async Task<AppConfig> LoadConfig()
         {
@@ -36,7 +53,7 @@ namespace DSTvmFarm.Core
                 };
 
                 await JsonSerializer.SerializeAsync<AppConfig>(fs, defaultConfig);
-
+                NLogger.Log.Info("Загрузка конфига завершена");
                 return defaultConfig;
             }
         }
@@ -64,6 +81,7 @@ namespace DSTvmFarm.Core
             {
                 NLogger.Log.Fatal("Ошибка загрузки аккаунта из файла " + ex.Message);
             }
+            NLogger.Log.Info("Загрузка аккаунтов завершена");
             return Task.FromResult(acc);
         }
 
@@ -73,10 +91,10 @@ namespace DSTvmFarm.Core
 
             using (Aes newAes = Aes.Create())
             {
-                newAes.Key = Key;
-                newAes.IV = IV;
+                newAes.Key = _key;
+                newAes.IV = _iv;
 
-                ICryptoTransform decryptor = newAes.CreateDecryptor(Key, IV);
+                ICryptoTransform decryptor = newAes.CreateDecryptor(_key, _iv);
 
                 using (MemoryStream msDecrypt = new MemoryStream(profileText))
                 {
