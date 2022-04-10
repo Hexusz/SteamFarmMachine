@@ -40,26 +40,74 @@ namespace DSTvmFarm.Core
 
             Thread.Sleep(15000);
 
-            var dstWindows = Utils.GetDstWindow();
-            var dstInstallWindows = Utils.GetDstInstallWindow();
 
-            if (dstInstallWindows.IsValid)
+            //Если появилось окно установки
+            if (Utils.GetDstInstallWindow().IsValid)
             {
                 NLogger.Log.Warn("Обнаружено окно установки DST");
                 Thread.Sleep(10000);
-                Utils.SetForegroundWindow(dstInstallWindows.RawPtr);
+                Utils.SetForegroundWindow(Utils.GetDstInstallWindow().RawPtr);
                 Thread.Sleep(1000);
-                Utils.SendEnter(dstInstallWindows.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
+                Utils.SendEnter(Utils.GetDstInstallWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
                 NLogger.Log.Warn("Отправка Enter окну установки");
                 Thread.Sleep(15000);
             }
 
+            //Если DST обновляется
+            if (Utils.GetDstUpdateWindow().IsValid)
+            {
+                NLogger.Log.Warn("Обнаружено окно обновления DST");
+                NLogger.Log.Warn("Ждем завершения обновления");
+                for (int i = 0; i <= 5; i++)
+                {
+                    Thread.Sleep(10000);
+                    if (!Utils.GetDstUpdateWindow().IsValid)
+                    {
+                        NLogger.Log.Warn("Обновление завершено");
+                        Thread.Sleep(5000);
+                        break;
+                    }
+                    
+                    if (i == 5)
+                    {
+                        NLogger.Log.Error("Не удалось дождаться завершения обновления, переход к следующему аккаунту");
+                        return false;
+                    }
+                    else
+                    {
+                        NLogger.Log.Warn("Обновление продолжается...");
+                    }
+                }
+            }
+
+            //После обновление, нужно нажать кнопку "Играть"
+            if (Utils.GetDstReadyToLaunchWindow().IsValid)
+            {
+                NLogger.Log.Warn("Кликаем на кнопку: Играть");
+                Utils.SetForegroundWindow(Utils.GetDstReadyToLaunchWindow().RawPtr);
+                Thread.Sleep(100);
+                Utils.Rect dstPlayRect = new Utils.Rect();
+                Utils.GetWindowRect(Utils.GetDstReadyToLaunchWindow().RawPtr, ref dstPlayRect);
+                Utils.LeftMouseClick(dstPlayRect.Right - 90, dstPlayRect.Top + 145);
+                Thread.Sleep(5000);
+                if (Utils.GetDstReadyToLaunchWindow().IsValid)
+                {
+                    NLogger.Log.Error("Ошибка при клике на кнопку, переход к следующему аккаунту");
+                    return false;
+                }
+                Thread.Sleep(10000);
+            }
+
             for (int i = 0; i <= 5; i++)
             {
-                dstWindows = Utils.GetDstWindow();
-                if (dstWindows.IsValid)
+                if (Utils.GetDstWindow().IsValid)
                 {
+                    NLogger.Log.Info("DST окно обнаружено!");
                     break;
+                }
+                else
+                {
+                    NLogger.Log.Info("Ждем окно DST...");
                 }
                 Thread.Sleep(5000);
                 if (i == 5)
@@ -69,24 +117,15 @@ namespace DSTvmFarm.Core
                 }
             }
 
-            NLogger.Log.Info("DST окно обнаружено!");
-
             Thread.Sleep(20000);
-            Utils.SetForegroundWindow(dstWindows.RawPtr);
+            Utils.SetForegroundWindow(Utils.GetDstWindow().RawPtr);
             Thread.Sleep(2000);
             NLogger.Log.Info("Отправка Enter окну");
-            Utils.SendEnter(dstWindows.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
-            Thread.Sleep(2000);
-            Utils.SendEnter(dstWindows.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
-            Thread.Sleep(2000);
-            Utils.SendEnter(dstWindows.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
-            Thread.Sleep(2000);
-            Utils.SendEnter(dstWindows.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
-            Thread.Sleep(2000);
-            Utils.SendEnter(dstWindows.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
-            Thread.Sleep(2000);
-            Utils.SendEnter(dstWindows.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
-            Thread.Sleep(2000);
+            for (int i = 0; i < 12; i++)
+            {
+                Utils.SendEnter(Utils.GetDstWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
+                Thread.Sleep(1000);
+            }
 
             return true;
         }

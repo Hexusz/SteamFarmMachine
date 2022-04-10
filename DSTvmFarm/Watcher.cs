@@ -25,13 +25,15 @@ namespace DSTvmFarm
             foreach (var account in Accounts)
             {
                 NLogger.Log.Info($"----------Текущий аккаунт {account.Name}----------");
+                NLogger.Log.Info($"Предметов в инвентаре было: {SteamFunc.GetItemsCount(account.SteamId)}");
+                
                 var steamLogin = SteamFunc.Login(index);
 
                 if (await steamLogin)
                 {
                     var farmTask = DstFunc.StartFarm();
                 }
-
+                NLogger.Log.Info($"Предметов в инвентаре стало: {SteamFunc.GetItemsCount(account.SteamId)}");
                 index++;
             }
             

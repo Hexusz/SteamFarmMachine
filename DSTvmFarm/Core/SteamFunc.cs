@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -8,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DSTvmFarm.Entities;
 using Microsoft.VisualBasic.CompilerServices;
+using Newtonsoft.Json;
 
 namespace DSTvmFarm.Core
 {
@@ -177,6 +179,33 @@ namespace DSTvmFarm.Core
                 return null; //Change later, catch-alls are bad!
             }
             return Encoding.UTF8.GetString(codeArray);
+        }
+
+        public static int GetItemsCount(string steamId)
+        {
+            try
+            {
+                string url = $"https://steamcommunity.com/inventory/{steamId}/322330/1";
+                HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
+                HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+                string response;
+                using (StreamReader streamReader = new StreamReader(httpWebResponse.GetResponseStream()))
+                {
+                    response = streamReader.ReadToEnd();
+                }
+                var totalInventoryCount = JsonConvert.DeserializeObject<TotalInventoryCount>(response);
+                return totalInventoryCount.Total_Inventory_Count;
+            }
+            catch (Exception e)
+            {
+                return -1;
+            }
+            
+        }
+
+        public class TotalInventoryCount
+        {
+            public int Total_Inventory_Count { get; set; }
         }
     }
 }
