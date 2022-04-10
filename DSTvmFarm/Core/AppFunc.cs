@@ -13,39 +13,35 @@ namespace DSTvmFarm.Core
 {
     public static class AppFunc
     {
-        private readonly static byte[] Key = Convert.FromBase64String("q9OwdZag1163OJqwjVAsIovXfSWG98m+sPSxwJecfe4=");
+        private static readonly byte[] Key = Convert.FromBase64String("q9OwdZag1163OJqwjVAsIovXfSWG98m+sPSxwJecfe4=");
 
-        private readonly static byte[] IV = Convert.FromBase64String("htJhjtmZs1Aq0UTbuyWXrw==");
+        private static readonly byte[] IV = Convert.FromBase64String("htJhjtmZs1Aq0UTbuyWXrw==");
 
         public static async Task<AppConfig> LoadConfig()
         {
             var cfgPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "DSTvmFarm.conf");
             if (File.Exists(cfgPath))
             {
-                using (FileStream fs = new FileStream(cfgPath, FileMode.OpenOrCreate))
-                {
-                    AppConfig? conf = await JsonSerializer.DeserializeAsync<AppConfig>(fs);
-                    return conf;
-                }
+                await using FileStream fs = new FileStream(cfgPath, FileMode.OpenOrCreate);
+                var conf = await JsonSerializer.DeserializeAsync<AppConfig>(fs);
+                return conf;
             }
             else
             {
-                using (FileStream fs = new FileStream("DSTvmFarm.conf", FileMode.OpenOrCreate))
+                await using FileStream fs = new FileStream("DSTvmFarm.conf", FileMode.OpenOrCreate);
+                var defaultConfig = new AppConfig()
                 {
-                    var defaulConfig = new AppConfig()
-                    {
-                        SteamPath = @"C:\Program Files (x86)\Steam",
-                        VirtualInputMethod = 0
-                    };
+                    SteamPath = @"C:\Program Files (x86)\Steam",
+                    VirtualInputMethod = 0
+                };
 
-                    await JsonSerializer.SerializeAsync<AppConfig>(fs, defaulConfig);
+                await JsonSerializer.SerializeAsync<AppConfig>(fs, defaultConfig);
 
-                    return defaulConfig;
-                }
+                return defaultConfig;
             }
         }
 
-        public static async Task<List<Account>> LoadAccounts()
+        public static Task<List<Account>> LoadAccounts()
         {
             var acc = new List<Account>();
             try
@@ -55,20 +51,20 @@ namespace DSTvmFarm.Core
                 
                 foreach (var accFile in accFiles)
                 {
-                    FileStream fsRead = new FileStream(accFile, FileMode.Open, FileAccess.Read);
-                    BinaryReader br = new BinaryReader(fsRead);
-                    long numBytes = new FileInfo(accFile).Length;
-                    string decryptedText = DecryptStringFromBytes(br.ReadBytes((int)numBytes));
-                    Account deserializeAccount = JsonConvert.DeserializeObject<Account>(decryptedText);
+                    var fsRead = new FileStream(accFile, FileMode.Open, FileAccess.Read);
+                    var br = new BinaryReader(fsRead);
+                    var numBytes = new FileInfo(accFile).Length;
+                    var decryptedText = DecryptStringFromBytes(br.ReadBytes((int)numBytes));
+                    var deserializeAccount = JsonConvert.DeserializeObject<Account>(decryptedText);
                     acc.Add(deserializeAccount);
                     fsRead.Close();
                 }
             }
             catch (Exception ex)
             {
-                NLogger.Log.Fatal("Ошибка загрузки аккаунта из файла");
+                NLogger.Log.Fatal("Ошибка загрузки аккаунта из файла "+ex.Message);
             }
-            return acc;
+            return Task.FromResult(acc);
         }
 
         private static string DecryptStringFromBytes(byte[] profileText)

@@ -40,7 +40,7 @@ namespace DSTvmFarm.Core
                 }
                 catch (Exception ex)
                 {
-                    NLogger.Log.Warn("Не удалось закрыть Steam");
+                    NLogger.Log.Warn("Не удалось закрыть Steam "+ex.Message);
                 }
             }
             catch
@@ -196,7 +196,7 @@ namespace DSTvmFarm.Core
                 var totalInventoryCount = JsonConvert.DeserializeObject<TotalInventoryCount>(response);
                 return totalInventoryCount.Total_Inventory_Count;
             }
-            catch (Exception e)
+            catch 
             {
                 return -1;
             }
