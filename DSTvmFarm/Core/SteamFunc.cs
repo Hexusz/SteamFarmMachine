@@ -40,7 +40,7 @@ namespace DSTvmFarm.Core
                 }
                 catch (Exception ex)
                 {
-                    NLogger.Log.Warn("Не удалось закрыть Steam "+ex.Message);
+                    NLogger.Log.Warn("Не удалось закрыть Steam " + ex.Message);
                 }
             }
             catch
@@ -106,8 +106,8 @@ namespace DSTvmFarm.Core
             Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
             Thread.Sleep(10);
 
-            var code2fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), Program.watcher.Accounts[index].SharedSecret);
-            foreach (char c in code2fa)
+            var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), Program.watcher.Accounts[index].SharedSecret);
+            foreach (char c in code2Fa)
             {
                 Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
                 Thread.Sleep(10);
@@ -196,11 +196,11 @@ namespace DSTvmFarm.Core
                 var totalInventoryCount = JsonConvert.DeserializeObject<TotalInventoryCount>(response);
                 return totalInventoryCount.Total_Inventory_Count;
             }
-            catch 
+            catch
             {
                 return -1;
             }
-            
+
         }
 
         public class TotalInventoryCount

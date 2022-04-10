@@ -67,7 +67,7 @@ namespace DSTvmFarm.Core
                         Thread.Sleep(5000);
                         break;
                     }
-                    
+
                     if (i == 5)
                     {
                         NLogger.Log.Error("Не удалось дождаться завершения обновления, переход к следующему аккаунту");

@@ -26,7 +26,7 @@ namespace DSTvmFarm
             {
                 NLogger.Log.Info($"----------Текущий аккаунт {account.Name}----------");
                 NLogger.Log.Info($"Предметов в инвентаре было: {SteamFunc.GetItemsCount(account.SteamId)}");
-                
+
                 var steamLogin = SteamFunc.Login(index);
 
                 if (await steamLogin)
@@ -36,7 +36,7 @@ namespace DSTvmFarm
                 NLogger.Log.Info($"Предметов в инвентаре стало: {SteamFunc.GetItemsCount(account.SteamId)}");
                 index++;
             }
-            
+
         }
     }
 }

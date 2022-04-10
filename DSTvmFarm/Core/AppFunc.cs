@@ -48,7 +48,7 @@ namespace DSTvmFarm.Core
             {
                 var accPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Accounts");
                 var accFiles = Directory.GetFiles(accPath, "*.acc");
-                
+
                 foreach (var accFile in accFiles)
                 {
                     var fsRead = new FileStream(accFile, FileMode.Open, FileAccess.Read);
@@ -62,7 +62,7 @@ namespace DSTvmFarm.Core
             }
             catch (Exception ex)
             {
-                NLogger.Log.Fatal("Ошибка загрузки аккаунта из файла "+ex.Message);
+                NLogger.Log.Fatal("Ошибка загрузки аккаунта из файла " + ex.Message);
             }
             return Task.FromResult(acc);
         }
