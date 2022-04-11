@@ -30,7 +30,8 @@ namespace DSTvmFarm.Core
             }
             else
             {
-                NLogger.Log.Fatal("Файл ключа не обнаружен");
+                NLogger.Log.Fatal("Файл ключа не обнаружен, завершение программы");
+                Environment.Exit(0);
             }
         }
 
