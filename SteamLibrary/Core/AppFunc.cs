@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using SteamLibrary.Entities;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using SteamLibrary.Entities;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace SteamLibrary.Core

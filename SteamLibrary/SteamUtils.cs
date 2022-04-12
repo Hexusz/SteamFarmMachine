@@ -1,11 +1,11 @@
-﻿using System;
+﻿using SteamLibrary.Core;
+using SteamLibrary.Entities;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using SteamLibrary.Core;
-using SteamLibrary.Entities;
 using Win32Interop.WinHandles;
 
 namespace SteamLibrary
