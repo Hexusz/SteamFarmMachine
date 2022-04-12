@@ -98,6 +98,17 @@ namespace DSTvmFarm.Core
                 Thread.Sleep(10000);
             }
 
+            if (!Utils.GetDstWindow().IsValid && Utils.GetDstCloudErrorWindow().IsValid)
+            {
+                NLogger.Log.Warn("Обнаружено окно ошибки облачной синхронизации");
+                Utils.SetForegroundWindow(Utils.GetDstCloudErrorWindow().RawPtr);
+                Utils.Rect cloudErrorWindow = new Utils.Rect();
+                Utils.GetWindowRect(Utils.GetDstCloudErrorWindow().RawPtr, ref cloudErrorWindow);
+                Utils.LeftMouseClick(cloudErrorWindow.Left + 60, cloudErrorWindow.Bottom - 40);
+                NLogger.Log.Warn("Пытаемся продолжить запуск");
+                Thread.Sleep(5000);
+            }
+
             for (int i = 0; i <= 5; i++)
             {
                 if (Utils.GetDstWindow().IsValid)

@@ -140,6 +140,14 @@ namespace DSTvmFarm
                 wh.GetWindowText().StartsWith("Обновление Don't Starve Together")));
         }
 
+        public static WindowHandle GetDstCloudErrorWindow()
+        {
+            return TopLevelWindowUtils.FindWindow(wh =>
+                wh.GetClassName().Equals("SDL_app") &&
+                (wh.GetWindowText().StartsWith("Steam Dialog") ||
+                wh.GetWindowText().StartsWith("Диалоговое окно Steam")));
+        }
+
         public static Process WaitForSteamProcess(WindowHandle windowHandle)
         {
             Process process = null;
