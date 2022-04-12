@@ -150,7 +150,7 @@ namespace DstDailyFarm.Core
 
         public static async Task<DstAppConfig> LoadConfig()
         {
-            var cfgPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "DSTvmFarm.conf");
+            var cfgPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "DstDailyFarm.conf");
             if (File.Exists(cfgPath))
             {
                 await using FileStream fs = new FileStream(cfgPath, FileMode.OpenOrCreate);
@@ -159,7 +159,7 @@ namespace DstDailyFarm.Core
             }
             else
             {
-                await using FileStream fs = new FileStream("DSTvmFarm.conf", FileMode.OpenOrCreate);
+                await using FileStream fs = new FileStream("DstDailyFarm.conf", FileMode.OpenOrCreate);
                 var defaultConfig = new DstAppConfig()
                 {
                     SteamPath = @"C:\Program Files (x86)\Steam",
