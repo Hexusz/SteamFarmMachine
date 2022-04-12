@@ -35,30 +35,6 @@ namespace DSTvmFarm.Core
             }
         }
 
-        public static async Task<AppConfig> LoadConfig()
-        {
-            var cfgPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "DSTvmFarm.conf");
-            if (File.Exists(cfgPath))
-            {
-                await using FileStream fs = new FileStream(cfgPath, FileMode.OpenOrCreate);
-                var conf = await JsonSerializer.DeserializeAsync<AppConfig>(fs);
-                return conf;
-            }
-            else
-            {
-                await using FileStream fs = new FileStream("DSTvmFarm.conf", FileMode.OpenOrCreate);
-                var defaultConfig = new AppConfig()
-                {
-                    SteamPath = @"C:\Program Files (x86)\Steam",
-                    VirtualInputMethod = 0
-                };
-
-                await JsonSerializer.SerializeAsync<AppConfig>(fs, defaultConfig);
-                NLogger.Log.Info("Загрузка конфига завершена");
-                return defaultConfig;
-            }
-        }
-
         public static Task<List<Account>> LoadAccounts()
         {
             var acc = new List<Account>();

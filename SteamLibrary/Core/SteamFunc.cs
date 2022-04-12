@@ -19,14 +19,14 @@ namespace DSTvmFarm.Core
 
         private static int maxRetry = 2;
 
-        public static async Task<bool> Login(int index)
+        public static async Task<bool> Login(Account account, string steamPath)
         {
 
             ProcessStartInfo stopInfo = new ProcessStartInfo
             {
                 UseShellExecute = true,
-                FileName = Path.Combine(Program.watcher.MainConfig.SteamPath, "steam.exe"),
-                WorkingDirectory = Program.watcher.MainConfig.SteamPath,
+                FileName = Path.Combine(steamPath, "steam.exe"),
+                WorkingDirectory = steamPath,
                 Arguments = "-shutdown"
             };
 
@@ -49,14 +49,14 @@ namespace DSTvmFarm.Core
 
             StringBuilder parametersBuilder = new StringBuilder();
 
-            parametersBuilder.Append($" -silent -login {Program.watcher.Accounts[index].Name} {Program.watcher.Accounts[index].Password}");
+            parametersBuilder.Append($" -silent -login {account.Name} {account.Password}");
 
 
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 UseShellExecute = true,
-                FileName = Path.Combine(Program.watcher.MainConfig.SteamPath, "steam.exe"),
-                WorkingDirectory = Program.watcher.MainConfig.SteamPath,
+                FileName = Path.Combine(steamPath, "steam.exe"),
+                WorkingDirectory = steamPath,
                 Arguments = parametersBuilder.ToString()
             };
 
@@ -71,64 +71,64 @@ namespace DSTvmFarm.Core
                 return false;
             }
 
-            var t = Type2Fa(index, 0);
+            var t = Type2Fa(account, 0);
             var res = await t;
-            NLogger.Log.Info($"{(res ? ("Успешная авторизация " + Program.watcher.Accounts[index].Name) : ("Ошибка авторизации " + Program.watcher.Accounts[index].Name))}");
+            NLogger.Log.Info($"{(res ? ("Успешная авторизация " + account.Name) : ("Ошибка авторизации " + account.Name))}");
 
             return res;
         }
 
-        private static async Task<bool> Type2Fa(int index, int tryCount)
+        private static async Task<bool> Type2Fa(Account account, int tryCount)
         {
-            var steamLoginWindow = Utils.GetSteamLoginWindow();
-            var steamGuardWindow = Utils.GetSteamGuardWindow();
+            var steamLoginWindow = SteamUtils.GetSteamLoginWindow();
+            var steamGuardWindow = SteamUtils.GetSteamGuardWindow();
 
             while (!steamLoginWindow.IsValid || !steamGuardWindow.IsValid)
             {
                 Thread.Sleep(10);
-                steamLoginWindow = Utils.GetSteamLoginWindow();
-                steamGuardWindow = Utils.GetSteamGuardWindow();
+                steamLoginWindow = SteamUtils.GetSteamLoginWindow();
+                steamGuardWindow = SteamUtils.GetSteamGuardWindow();
 
-                var steamWarningWindow = Utils.GetSteamWarningWindow();
+                var steamWarningWindow = SteamUtils.GetSteamWarningWindow();
                 if (steamWarningWindow.IsValid)
                 {
                     return false;
                 }
             }
 
-            Process steamGuardProcess = Utils.WaitForSteamProcess(steamGuardWindow);
+            Process steamGuardProcess = SteamUtils.WaitForSteamProcess(steamGuardWindow);
             steamGuardProcess.WaitForInputIdle();
 
             Thread.Sleep(3000);
 
             NLogger.Log.Info("Вводим 2FA код");
 
-            Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
+            SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
             Thread.Sleep(10);
 
-            var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), Program.watcher.Accounts[index].SharedSecret);
+            var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), account.SharedSecret);
             foreach (char c in code2Fa)
             {
-                Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
+                SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
                 Thread.Sleep(10);
 
-                Utils.SendCharacter(steamGuardWindow.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod, c);
+                SteamUtils.SendCharacter(steamGuardWindow.RawPtr, VirtualInputMethod.SendMessage, c);
             }
 
-            Utils.SetForegroundWindow(steamGuardWindow.RawPtr);
+            SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
 
             Thread.Sleep(10);
 
-            Utils.SendEnter(steamGuardWindow.RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
+            SteamUtils.SendEnter(steamGuardWindow.RawPtr, VirtualInputMethod.SendMessage);
 
             Thread.Sleep(5000);
 
-            steamGuardWindow = Utils.GetSteamGuardWindow();
+            steamGuardWindow = SteamUtils.GetSteamGuardWindow();
 
             if (tryCount <= maxRetry && steamGuardWindow.IsValid)
             {
                 NLogger.Log.Info("2FA Ошибка кода, повтор");
-                var t = Type2Fa(index, tryCount + 1);
+                var t = Type2Fa(account, tryCount + 1);
                 return await t;
             }
             else if (tryCount == maxRetry + 1 && steamGuardWindow.IsValid)

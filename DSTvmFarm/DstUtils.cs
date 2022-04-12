@@ -11,7 +11,7 @@ using Win32Interop.WinHandles;
 
 namespace DSTvmFarm
 {
-    public class Utils
+    public class DstUtils
     {
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         static extern bool SetCursorPos(int x, int y);
@@ -76,39 +76,6 @@ namespace DSTvmFarm
         public const int MOUSEEVENTF_LEFTDOWN = 0x02;
         public const int MOUSEEVENTF_LEFTUP = 0x04;
 
-        public static int API_KEY_LENGTH = 32;
-
-        readonly static char[] specialChars = { '{', '}', '(', ')', '[', ']', '+', '^', '%', '~' };
-
-        public static WindowHandle GetSteamLoginWindow()
-        {
-            return TopLevelWindowUtils.FindWindow(wh =>
-                wh.GetClassName().Equals("vguiPopupWindow") &&
-                (wh.GetWindowText().Contains("Steam") &&
-                 !wh.GetWindowText().Contains("-") &&
-                 !wh.GetWindowText().Contains("—") &&
-                 wh.GetWindowText().Length > 5));
-        }
-
-        public static WindowHandle GetSteamGuardWindow()
-        {
-            // Also checking for vguiPopupWindow class name to avoid catching things like browser tabs.
-            WindowHandle windowHandle = TopLevelWindowUtils.FindWindow(wh =>
-                wh.GetClassName().Equals("vguiPopupWindow") &&
-                (wh.GetWindowText().StartsWith("Steam Guard") ||
-                 wh.GetWindowText().StartsWith("Steam 令牌") ||
-                 wh.GetWindowText().StartsWith("Steam ガード")));
-            return windowHandle;
-        }
-
-        public static WindowHandle GetSteamWarningWindow()
-        {
-            return TopLevelWindowUtils.FindWindow(wh =>
-                wh.GetClassName().Equals("vguiPopupWindow") &&
-                (wh.GetWindowText().StartsWith("Steam - ") ||
-                 wh.GetWindowText().StartsWith("Steam — ")));
-        }
-
         public static WindowHandle GetDstWindow()
         {
             return TopLevelWindowUtils.FindWindow(wh =>
@@ -146,51 +113,6 @@ namespace DSTvmFarm
                 wh.GetClassName().Equals("SDL_app") &&
                 (wh.GetWindowText().StartsWith("Steam Dialog") ||
                 wh.GetWindowText().StartsWith("Диалоговое окно Steam")));
-        }
-
-        public static Process WaitForSteamProcess(WindowHandle windowHandle)
-        {
-            Process process = null;
-
-            // Wait for valid process to wait for input idle.
-            NLogger.Log.Info("Ждем окно Steam Guard");
-            while (process == null)
-            {
-                int procId = 0;
-                GetWindowThreadProcessId(windowHandle.RawPtr, out procId);
-
-                // Wait for valid process id from handle.
-                while (procId == 0)
-                {
-                    Thread.Sleep(10);
-                    GetWindowThreadProcessId(windowHandle.RawPtr, out procId);
-                }
-
-                try
-                {
-                    process = Process.GetProcessById(procId);
-                }
-                catch
-                {
-                    process = null;
-                }
-            }
-
-            return process;
-        }
-
-        public static void SendCharacter(IntPtr hwnd, VirtualInputMethod inputMethod, char c)
-        {
-            switch (inputMethod)
-            {
-                case VirtualInputMethod.SendMessage:
-                    SendMessage(hwnd, WM_CHAR, c, IntPtr.Zero);
-                    break;
-
-                case VirtualInputMethod.PostMessage:
-                    PostMessage(hwnd, WM_CHAR, (IntPtr)c, IntPtr.Zero);
-                    break;
-            }
         }
 
         public static void SendEnter(IntPtr hwnd, VirtualInputMethod inputMethod)

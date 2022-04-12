@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using DSTvmFarm.Entities;
@@ -42,26 +44,26 @@ namespace DSTvmFarm.Core
 
 
             //Если появилось окно установки
-            if (Utils.GetDstInstallWindow().IsValid)
+            if (DstUtils.GetDstInstallWindow().IsValid)
             {
                 NLogger.Log.Warn("Обнаружено окно установки DST");
                 Thread.Sleep(10000);
-                Utils.SetForegroundWindow(Utils.GetDstInstallWindow().RawPtr);
+                DstUtils.SetForegroundWindow(DstUtils.GetDstInstallWindow().RawPtr);
                 Thread.Sleep(1000);
-                Utils.SendEnter(Utils.GetDstInstallWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
+                DstUtils.SendEnter(DstUtils.GetDstInstallWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
                 NLogger.Log.Warn("Отправка Enter окну установки");
                 Thread.Sleep(15000);
             }
 
             //Если DST обновляется
-            if (Utils.GetDstUpdateWindow().IsValid)
+            if (DstUtils.GetDstUpdateWindow().IsValid)
             {
                 NLogger.Log.Warn("Обнаружено окно обновления DST");
                 NLogger.Log.Warn("Ждем завершения обновления");
                 for (int i = 0; i <= 5; i++)
                 {
                     Thread.Sleep(10000);
-                    if (!Utils.GetDstUpdateWindow().IsValid)
+                    if (!DstUtils.GetDstUpdateWindow().IsValid)
                     {
                         NLogger.Log.Warn("Обновление завершено");
                         Thread.Sleep(5000);
@@ -81,16 +83,16 @@ namespace DSTvmFarm.Core
             }
 
             //После обновление, нужно нажать кнопку "Играть"
-            if (Utils.GetDstReadyToLaunchWindow().IsValid)
+            if (DstUtils.GetDstReadyToLaunchWindow().IsValid)
             {
                 NLogger.Log.Warn("Кликаем на кнопку: Играть");
-                Utils.SetForegroundWindow(Utils.GetDstReadyToLaunchWindow().RawPtr);
+                DstUtils.SetForegroundWindow(DstUtils.GetDstReadyToLaunchWindow().RawPtr);
                 Thread.Sleep(100);
-                Utils.Rect dstPlayRect = new Utils.Rect();
-                Utils.GetWindowRect(Utils.GetDstReadyToLaunchWindow().RawPtr, ref dstPlayRect);
-                Utils.LeftMouseClick(dstPlayRect.Right - 90, dstPlayRect.Top + 145);
+                DstUtils.Rect dstPlayRect = new DstUtils.Rect();
+                DstUtils.GetWindowRect(DstUtils.GetDstReadyToLaunchWindow().RawPtr, ref dstPlayRect);
+                DstUtils.LeftMouseClick(dstPlayRect.Right - 90, dstPlayRect.Top + 145);
                 Thread.Sleep(5000);
-                if (Utils.GetDstReadyToLaunchWindow().IsValid)
+                if (DstUtils.GetDstReadyToLaunchWindow().IsValid)
                 {
                     NLogger.Log.Error("Ошибка при клике на кнопку, переход к следующему аккаунту");
                     return false;
@@ -98,20 +100,20 @@ namespace DSTvmFarm.Core
                 Thread.Sleep(10000);
             }
 
-            if (!Utils.GetDstWindow().IsValid && Utils.GetDstCloudErrorWindow().IsValid)
+            if (!DstUtils.GetDstWindow().IsValid && DstUtils.GetDstCloudErrorWindow().IsValid)
             {
                 NLogger.Log.Warn("Обнаружено окно ошибки облачной синхронизации");
-                Utils.SetForegroundWindow(Utils.GetDstCloudErrorWindow().RawPtr);
-                Utils.Rect cloudErrorWindow = new Utils.Rect();
-                Utils.GetWindowRect(Utils.GetDstCloudErrorWindow().RawPtr, ref cloudErrorWindow);
-                Utils.LeftMouseClick(cloudErrorWindow.Left + 60, cloudErrorWindow.Bottom - 40);
+                DstUtils.SetForegroundWindow(DstUtils.GetDstCloudErrorWindow().RawPtr);
+                DstUtils.Rect cloudErrorWindow = new DstUtils.Rect();
+                DstUtils.GetWindowRect(DstUtils.GetDstCloudErrorWindow().RawPtr, ref cloudErrorWindow);
+                DstUtils.LeftMouseClick(cloudErrorWindow.Left + 60, cloudErrorWindow.Bottom - 40);
                 NLogger.Log.Warn("Пытаемся продолжить запуск");
                 Thread.Sleep(5000);
             }
 
             for (int i = 0; i <= 5; i++)
             {
-                if (Utils.GetDstWindow().IsValid)
+                if (DstUtils.GetDstWindow().IsValid)
                 {
                     NLogger.Log.Info("DST окно обнаружено!");
                     break;
@@ -129,16 +131,42 @@ namespace DSTvmFarm.Core
             }
 
             Thread.Sleep(20000);
-            Utils.SetForegroundWindow(Utils.GetDstWindow().RawPtr);
+            DstUtils.SetForegroundWindow(DstUtils.GetDstWindow().RawPtr);
             Thread.Sleep(2000);
             NLogger.Log.Info("Отправка Enter окну");
             for (int i = 0; i < 12; i++)
             {
-                Utils.SendEnter(Utils.GetDstWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
+                DstUtils.SendEnter(DstUtils.GetDstWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
                 Thread.Sleep(1000);
             }
 
             return true;
+        }
+
+
+
+        public static async Task<DstAppConfig> LoadConfig()
+        {
+            var cfgPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "DSTvmFarm.conf");
+            if (File.Exists(cfgPath))
+            {
+                await using FileStream fs = new FileStream(cfgPath, FileMode.OpenOrCreate);
+                var conf = await JsonSerializer.DeserializeAsync<DstAppConfig>(fs);
+                return conf;
+            }
+            else
+            {
+                await using FileStream fs = new FileStream("DSTvmFarm.conf", FileMode.OpenOrCreate);
+                var defaultConfig = new DstAppConfig()
+                {
+                    SteamPath = @"C:\Program Files (x86)\Steam",
+                    VirtualInputMethod = 0
+                };
+
+                await JsonSerializer.SerializeAsync<DstAppConfig>(fs, defaultConfig);
+                NLogger.Log.Info("Загрузка конфига завершена");
+                return defaultConfig;
+            }
         }
     }
 }

@@ -14,6 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SteamLibrary\SteamLibrary.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="C:\Users\alo06\.nuget\packages\nlog.config\4.7.15\contentFiles\any\any\NLog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
