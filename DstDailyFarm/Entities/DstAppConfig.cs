@@ -1,4 +1,4 @@
-﻿namespace DSTvmFarm.Entities
+﻿namespace DstDailyFarm.Entities
 {
     public class DstAppConfig
     {

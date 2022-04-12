@@ -6,9 +6,13 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using DSTvmFarm.Entities;
+using DstDailyFarm.Entities;
+using SteamLibrary;
+using SteamLibrary.Core;
+using SteamLibrary.Entities;
 
-namespace DSTvmFarm.Core
+
+namespace DstDailyFarm.Core
 {
     public class DstFunc
     {
@@ -19,7 +23,6 @@ namespace DSTvmFarm.Core
             StringBuilder parametersBuilder = new StringBuilder();
 
             parametersBuilder.Append($" -applaunch 322330");
-
 
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
@@ -40,17 +43,17 @@ namespace DSTvmFarm.Core
                 return false;
             }
 
+            //Ждем после запуска DST
             Thread.Sleep(15000);
-
 
             //Если появилось окно установки
             if (DstUtils.GetDstInstallWindow().IsValid)
             {
                 NLogger.Log.Warn("Обнаружено окно установки DST");
                 Thread.Sleep(10000);
-                DstUtils.SetForegroundWindow(DstUtils.GetDstInstallWindow().RawPtr);
+                SteamUtils.SetForegroundWindow(DstUtils.GetDstInstallWindow().RawPtr);
                 Thread.Sleep(1000);
-                DstUtils.SendEnter(DstUtils.GetDstInstallWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
+                SteamUtils.SendEnter(DstUtils.GetDstInstallWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
                 NLogger.Log.Warn("Отправка Enter окну установки");
                 Thread.Sleep(15000);
             }
@@ -86,11 +89,11 @@ namespace DSTvmFarm.Core
             if (DstUtils.GetDstReadyToLaunchWindow().IsValid)
             {
                 NLogger.Log.Warn("Кликаем на кнопку: Играть");
-                DstUtils.SetForegroundWindow(DstUtils.GetDstReadyToLaunchWindow().RawPtr);
+                SteamUtils.SetForegroundWindow(DstUtils.GetDstReadyToLaunchWindow().RawPtr);
                 Thread.Sleep(100);
-                DstUtils.Rect dstPlayRect = new DstUtils.Rect();
-                DstUtils.GetWindowRect(DstUtils.GetDstReadyToLaunchWindow().RawPtr, ref dstPlayRect);
-                DstUtils.LeftMouseClick(dstPlayRect.Right - 90, dstPlayRect.Top + 145);
+                SteamUtils.Rect dstPlayRect = new SteamLibrary.SteamUtils.Rect();
+                SteamUtils.GetWindowRect(DstUtils.GetDstReadyToLaunchWindow().RawPtr, ref dstPlayRect);
+                SteamUtils.LeftMouseClick(dstPlayRect.Right - 90, dstPlayRect.Top + 145);
                 Thread.Sleep(5000);
                 if (DstUtils.GetDstReadyToLaunchWindow().IsValid)
                 {
@@ -100,17 +103,19 @@ namespace DSTvmFarm.Core
                 Thread.Sleep(10000);
             }
 
+            //Если появилось окно с ошибкой облачной синхронизации
             if (!DstUtils.GetDstWindow().IsValid && DstUtils.GetDstCloudErrorWindow().IsValid)
             {
                 NLogger.Log.Warn("Обнаружено окно ошибки облачной синхронизации");
-                DstUtils.SetForegroundWindow(DstUtils.GetDstCloudErrorWindow().RawPtr);
-                DstUtils.Rect cloudErrorWindow = new DstUtils.Rect();
-                DstUtils.GetWindowRect(DstUtils.GetDstCloudErrorWindow().RawPtr, ref cloudErrorWindow);
-                DstUtils.LeftMouseClick(cloudErrorWindow.Left + 60, cloudErrorWindow.Bottom - 40);
+                SteamUtils.SetForegroundWindow(DstUtils.GetDstCloudErrorWindow().RawPtr);
+                SteamUtils.Rect cloudErrorWindow = new SteamLibrary.SteamUtils.Rect();
+                SteamUtils.GetWindowRect(DstUtils.GetDstCloudErrorWindow().RawPtr, ref cloudErrorWindow);
+                SteamUtils.LeftMouseClick(cloudErrorWindow.Left + 60, cloudErrorWindow.Bottom - 40);
                 NLogger.Log.Warn("Пытаемся продолжить запуск");
                 Thread.Sleep(5000);
             }
 
+            //Ищем окно DST несколько раз
             for (int i = 0; i <= 5; i++)
             {
                 if (DstUtils.GetDstWindow().IsValid)
@@ -131,19 +136,17 @@ namespace DSTvmFarm.Core
             }
 
             Thread.Sleep(20000);
-            DstUtils.SetForegroundWindow(DstUtils.GetDstWindow().RawPtr);
+            SteamUtils.SetForegroundWindow(DstUtils.GetDstWindow().RawPtr);
             Thread.Sleep(2000);
             NLogger.Log.Info("Отправка Enter окну");
             for (int i = 0; i < 12; i++)
             {
-                DstUtils.SendEnter(DstUtils.GetDstWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
+                SteamUtils.SendEnter(DstUtils.GetDstWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
                 Thread.Sleep(1000);
             }
 
             return true;
         }
-
-
 
         public static async Task<DstAppConfig> LoadConfig()
         {

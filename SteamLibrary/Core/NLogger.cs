@@ -1,6 +1,6 @@
 ﻿using NLog;
 
-namespace DSTvmFarm.Core
+namespace SteamLibrary.Core
 {
     public static class NLogger
     {

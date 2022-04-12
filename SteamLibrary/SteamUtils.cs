@@ -4,12 +4,11 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using DSTvmFarm.Core;
-using DSTvmFarm.Entities;
-using NLog;
+using SteamLibrary.Core;
+using SteamLibrary.Entities;
 using Win32Interop.WinHandles;
 
-namespace DSTvmFarm
+namespace SteamLibrary
 {
     public class SteamUtils
     {
@@ -77,8 +76,6 @@ namespace DSTvmFarm
         public const int MOUSEEVENTF_LEFTUP = 0x04;
 
         public static int API_KEY_LENGTH = 32;
-
-        readonly static char[] specialChars = { '{', '}', '(', ')', '[', ']', '+', '^', '%', '~' };
 
         public static WindowHandle GetSteamLoginWindow()
         {

@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using DSTvmFarm.Core;
-using DSTvmFarm.Entities;
-using NLog;
+using DstDailyFarm.Core;
+using DstDailyFarm.Entities;
+using SteamLibrary.Core;
+using SteamLibrary.Entities;
 
-namespace DSTvmFarm
+namespace DstDailyFarm
 {
     public class Watcher
     {
@@ -19,7 +18,7 @@ namespace DSTvmFarm
             AppFunc.LoadCryptKey();
             MainConfig = DstFunc.LoadConfig().Result;
             Accounts = AppFunc.LoadAccounts().Result.OrderBy(x => x.Name).ToList();
-            
+
             var index = 0;
             foreach (var account in Accounts)
             {

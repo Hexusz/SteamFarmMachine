@@ -7,17 +7,16 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using DSTvmFarm.Entities;
-using Microsoft.VisualBasic.CompilerServices;
 using Newtonsoft.Json;
+using SteamLibrary.Entities;
 
-namespace DSTvmFarm.Core
+namespace SteamLibrary.Core
 {
     public static class SteamFunc
     {
-        private static byte[] steamGuardCodeTranslations = new byte[] { 50, 51, 52, 53, 54, 55, 56, 57, 66, 67, 68, 70, 71, 72, 74, 75, 77, 78, 80, 81, 82, 84, 86, 87, 88, 89 };
+        private static readonly byte[] steamGuardCodeTranslations = new byte[] { 50, 51, 52, 53, 54, 55, 56, 57, 66, 67, 68, 70, 71, 72, 74, 75, 77, 78, 80, 81, 82, 84, 86, 87, 88, 89 };
 
-        private static int maxRetry = 2;
+        private static int _maxRetry = 2;
 
         public static async Task<bool> Login(Account account, string steamPath)
         {
@@ -125,13 +124,13 @@ namespace DSTvmFarm.Core
 
             steamGuardWindow = SteamUtils.GetSteamGuardWindow();
 
-            if (tryCount <= maxRetry && steamGuardWindow.IsValid)
+            if (tryCount <= _maxRetry && steamGuardWindow.IsValid)
             {
                 NLogger.Log.Info("2FA Ошибка кода, повтор");
                 var t = Type2Fa(account, tryCount + 1);
                 return await t;
             }
-            else if (tryCount == maxRetry + 1 && steamGuardWindow.IsValid)
+            else if (tryCount == _maxRetry + 1 && steamGuardWindow.IsValid)
             {
                 NLogger.Log.Error("2FA Ошибка, проверьте данные аккаунта");
                 return false;
@@ -142,7 +141,7 @@ namespace DSTvmFarm.Core
 
         public static string GenerateSteamGuardCodeForTime(long time, string sharedSecret)
         {
-            if (sharedSecret == null || sharedSecret.Length == 0)
+            if (string.IsNullOrEmpty(sharedSecret))
             {
                 return "";
             }

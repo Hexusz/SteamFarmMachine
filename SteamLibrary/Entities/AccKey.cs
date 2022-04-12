@@ -1,4 +1,4 @@
-﻿namespace DSTvmFarm.Entities
+﻿namespace SteamLibrary.Entities
 {
     public class AccKey
     {

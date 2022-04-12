@@ -4,12 +4,11 @@ using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using DSTvmFarm.Entities;
 using Newtonsoft.Json;
-using NLog.Fluent;
+using SteamLibrary.Entities;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
-namespace DSTvmFarm.Core
+namespace SteamLibrary.Core
 {
     public static class AppFunc
     {
