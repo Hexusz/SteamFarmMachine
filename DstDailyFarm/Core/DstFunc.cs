@@ -53,6 +53,7 @@ namespace DstDailyFarm.Core
                 Thread.Sleep(10000);
                 SteamUtils.SetForegroundWindow(DstUtils.GetDstInstallWindow().RawPtr);
                 Thread.Sleep(1000);
+                SteamUtils.SetForegroundWindow(DstUtils.GetDstInstallWindow().RawPtr);
                 SteamUtils.SendEnter(DstUtils.GetDstInstallWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
                 NLogger.Log.Warn("Отправка Enter окну установки");
                 Thread.Sleep(15000);
