@@ -74,6 +74,7 @@ namespace SteamLibrary
         public const int VK_SPACE = 0x20;
         public const int MOUSEEVENTF_LEFTDOWN = 0x02;
         public const int MOUSEEVENTF_LEFTUP = 0x04;
+        public const int WM_CLOSE = 0x10;
 
         public static int API_KEY_LENGTH = 32;
 
@@ -187,6 +188,11 @@ namespace SteamLibrary
             mouse_event(MOUSEEVENTF_LEFTUP, xPos, yPos, 0, 0);
             Thread.Sleep(50);
             SetCursorPos(mousePos.X, mousePos.Y);
+        }
+
+        public static void CloseWindow(IntPtr handle)
+        {
+            SendMessage(handle, WM_CLOSE, 0, IntPtr.Zero);
         }
     }
 }

@@ -5,11 +5,13 @@ using SteamLibrary.Entities;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Win32Interop.WinHandles;
 
 
 namespace DstDailyFarm.Core
@@ -138,13 +140,25 @@ namespace DstDailyFarm.Core
 
             Thread.Sleep(20000);
             SteamUtils.SetForegroundWindow(DstUtils.GetDstWindow().RawPtr);
-            Thread.Sleep(2000);
+            Thread.Sleep(1000);
             NLogger.Log.Info("Отправка Enter окну");
             for (int i = 0; i < 12; i++)
             {
+                SteamUtils.SetForegroundWindow(DstUtils.GetDstWindow().RawPtr);
                 SteamUtils.SendEnter(DstUtils.GetDstWindow().RawPtr, (VirtualInputMethod)Program.watcher.MainConfig.VirtualInputMethod);
                 Thread.Sleep(1000);
             }
+
+            //Пробуем закрыть окно DST
+            try
+            {
+                SteamUtils.CloseWindow(DstUtils.GetDstWindow().RawPtr);
+            }
+            catch (Exception e)
+            {
+                NLogger.Log.Error("Ошибка закрытия DST");
+            }
+            Thread.Sleep(5000);
 
             return true;
         }
