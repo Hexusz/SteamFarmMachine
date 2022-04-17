@@ -20,7 +20,6 @@ namespace SteamLibrary.Core
 
         public static async Task<bool> Login(Account account, string steamPath)
         {
-
             ProcessStartInfo stopInfo = new ProcessStartInfo
             {
                 UseShellExecute = true,
@@ -31,19 +30,13 @@ namespace SteamLibrary.Core
 
             try
             {
-                Process SteamProc = Process.GetProcessesByName("Steam")[0];
-                try
-                {
-                    Process.Start(stopInfo);
-                    SteamProc.WaitForExit();
-                }
-                catch (Exception ex)
-                {
-                    NLogger.Log.Warn("Не удалось закрыть Steam " + ex.Message);
-                }
+                Process steamProc = Process.GetProcessesByName("Steam")[0];
+                Process.Start(stopInfo);
+                steamProc.WaitForExit();
             }
-            catch
+            catch (Exception ex)
             {
+                NLogger.Log.Warn("Не удалось закрыть Steam " + ex.Message);
             }
 
             StringBuilder parametersBuilder = new StringBuilder();
@@ -103,13 +96,13 @@ namespace SteamLibrary.Core
             NLogger.Log.Info("Вводим 2FA код");
 
             SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
-            Thread.Sleep(10);
+            Thread.Sleep(50);
 
             var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), account.SharedSecret);
             foreach (char c in code2Fa)
             {
                 SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
-                Thread.Sleep(10);
+                Thread.Sleep(50);
 
                 SteamUtils.SendCharacter(steamGuardWindow.RawPtr, VirtualInputMethod.SendMessage, c);
             }
