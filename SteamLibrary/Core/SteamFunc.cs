@@ -1,8 +1,10 @@
 ﻿using Newtonsoft.Json;
 using SteamLibrary.Entities;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -132,6 +134,110 @@ namespace SteamLibrary.Core
             return !steamGuardWindow.IsValid;
         }
 
+        public static async Task<bool> SandLogin(List<Account> accounts, string sandSteamPath, string sandPath)
+        {
+            if (!CheckSandIni(accounts))
+            {
+                return false;
+            }
+
+            foreach (var account in accounts)
+            {
+                StringBuilder parametersBuilder = new StringBuilder();
+
+                parametersBuilder.Append($"/box:{account.Name} {sandSteamPath}\\steam.exe -silent -login {account.Name} {account.Password}");
+
+
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    UseShellExecute = true,
+                    FileName = Path.Combine(sandPath, "Start.exe"),
+                    WorkingDirectory = sandPath,
+                    Arguments = parametersBuilder.ToString()
+                };
+
+                try
+                {
+                    Process steamProcess = Process.Start(startInfo);
+                    NLogger.Log.Info("Sand Steam запущен");
+                }
+                catch (Exception ex)
+                {
+                    NLogger.Log.Warn("Не удалось запустить Sand Steam " + ex.Message);
+                    return false;
+                }
+
+                var t = SandType2Fa(account, 0);
+                var res = await t;
+                NLogger.Log.Info(
+                    $"{(res ? ("Успешная авторизация " + account.Name) : ("Ошибка авторизации " + account.Name))}");
+            }
+
+            return true;
+        }
+
+        private static async Task<bool> SandType2Fa(Account account, int tryCount)
+        {
+            var steamLoginWindow = SandSteamUtils.GetSandSteamLoginWindow(account.Name);
+            var steamGuardWindow = SandSteamUtils.GetSandSteamGuardWindow(account.Name);
+
+            while (!steamLoginWindow.IsValid || !steamGuardWindow.IsValid)
+            {
+                Thread.Sleep(10);
+                steamLoginWindow = SandSteamUtils.GetSandSteamLoginWindow(account.Name);
+                steamGuardWindow = SandSteamUtils.GetSandSteamGuardWindow(account.Name);
+
+                var steamWarningWindow = SandSteamUtils.GetSandSteamWarningWindow(account.Name);
+                if (steamWarningWindow.IsValid)
+                {
+                    return false;
+                }
+            }
+
+            Process steamGuardProcess = SteamUtils.WaitForSteamProcess(steamGuardWindow);
+            steamGuardProcess.WaitForInputIdle();
+
+            Thread.Sleep(3000);
+
+            NLogger.Log.Info("Вводим 2FA код");
+
+            SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
+            Thread.Sleep(50);
+
+            var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), account.SharedSecret);
+            foreach (char c in code2Fa)
+            {
+                SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
+                Thread.Sleep(50);
+
+                SteamUtils.SendCharacter(steamGuardWindow.RawPtr, VirtualInputMethod.SendMessage, c);
+            }
+
+            SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
+
+            Thread.Sleep(10);
+
+            SteamUtils.SendEnter(steamGuardWindow.RawPtr, VirtualInputMethod.SendMessage);
+
+            Thread.Sleep(5000);
+
+            steamGuardWindow = SandSteamUtils.GetSandSteamGuardWindow(account.Name);
+
+            if (tryCount <= _maxRetry && steamGuardWindow.IsValid)
+            {
+                NLogger.Log.Info("2FA Ошибка кода, повтор");
+                var t = Type2Fa(account, tryCount + 1);
+                return await t;
+            }
+            else if (tryCount == _maxRetry + 1 && steamGuardWindow.IsValid)
+            {
+                NLogger.Log.Error("2FA Ошибка, проверьте данные аккаунта");
+                return false;
+            }
+
+            return !steamGuardWindow.IsValid;
+        }
+
         public static string GenerateSteamGuardCodeForTime(long time, string sharedSecret)
         {
             if (string.IsNullOrEmpty(sharedSecret))
@@ -198,6 +304,69 @@ namespace SteamLibrary.Core
         public class TotalInventoryCount
         {
             public int Total_Inventory_Count { get; set; }
+        }
+
+        public static bool CheckSandIni(List<Account> accounts)
+        {
+            var readText = new List<string>();
+            var copyLineList = new List<string>();
+            var defaultBoxLine = false;
+            try
+            {
+                readText = File.ReadAllLines(@"C:\Windows\Sandboxie.ini").ToList();
+            }
+            catch (Exception ex)
+            {
+                NLogger.Log.Fatal("Ошибка чтения Sandboxie.ini");
+                return false;
+            }
+
+            var readTextJoin = string.Join("\n", readText);
+            //Если все аккаунты уже есть в ini файле возвращаем true
+            if (accounts.TrueForAll(x => readTextJoin.Contains($"[{x.Name}]")))
+            {
+                return true;
+            }
+
+            var pastLine = 0;
+
+            for (int i = 0; i < readText.Count; i++)
+            {
+                if (readText[i].Contains("[DefaultBox]"))
+                {
+                    defaultBoxLine = true;
+                    continue;
+                }
+                if (defaultBoxLine && readText[i] == "")
+                {
+                    defaultBoxLine = false;
+                    pastLine = i;
+                    break;
+                }
+
+                if (defaultBoxLine)
+                {
+                    copyLineList.Add(readText[i]);
+                }
+            }
+
+            var pastLineList = new List<string>();
+
+            foreach (var account in accounts)
+            {
+                if (readTextJoin.Contains($"[{account.Name}]")) { continue;}
+                pastLineList.Add("");
+                pastLineList.Add($"[{account.Name}]");
+                pastLineList.AddRange(copyLineList);
+            }
+
+            readText.InsertRange(pastLine, pastLineList);
+            NLogger.Log.Warn("Не для всех аккаунтов готовы песочницы");
+            NLogger.Log.Warn(@"Замените C:\Windows\Sandboxie.ini на этот код:");
+            NLogger.Log.Info("\n"+string.Join("\n", readText) );
+
+
+            return false;
         }
     }
 }
