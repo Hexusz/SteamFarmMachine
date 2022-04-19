@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DstDailyFarm", "DstDailyFar
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamLibrary", "SteamLibrary\SteamLibrary.csproj", "{C8CCFD7A-556A-4735-8294-8A647D6FB46A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AccountCreator", "AccountCreator\AccountCreator.csproj", "{B1ABACD6-456C-454E-8C05-C2CA57CE0D11}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{C8CCFD7A-556A-4735-8294-8A647D6FB46A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C8CCFD7A-556A-4735-8294-8A647D6FB46A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8CCFD7A-556A-4735-8294-8A647D6FB46A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1ABACD6-456C-454E-8C05-C2CA57CE0D11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1ABACD6-456C-454E-8C05-C2CA57CE0D11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1ABACD6-456C-454E-8C05-C2CA57CE0D11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1ABACD6-456C-454E-8C05-C2CA57CE0D11}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

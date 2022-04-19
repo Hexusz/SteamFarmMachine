@@ -21,7 +21,7 @@ namespace SteamLibrary.Core
             var keyPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "AccKey.key");
             if (File.Exists(keyPath))
             {
-                using FileStream fs = new FileStream(keyPath, FileMode.OpenOrCreate);
+                using FileStream fs = new FileStream(keyPath, FileMode.Open);
                 var accKey = JsonSerializer.DeserializeAsync<AccKey>(fs);
                 _key = accKey.Result.Key;
                 _iv = accKey.Result.IV;
