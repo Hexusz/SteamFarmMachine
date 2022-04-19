@@ -354,7 +354,7 @@ namespace SteamLibrary.Core
 
             foreach (var account in accounts)
             {
-                if (readTextJoin.Contains($"[{account.Name}]")) { continue;}
+                if (readTextJoin.Contains($"[{account.Name}]")) { continue; }
                 pastLineList.Add("");
                 pastLineList.Add($"[{account.Name}]");
                 pastLineList.AddRange(copyLineList);
@@ -363,7 +363,7 @@ namespace SteamLibrary.Core
             readText.InsertRange(pastLine, pastLineList);
             NLogger.Log.Warn("Не для всех аккаунтов готовы песочницы");
             NLogger.Log.Warn(@"Замените C:\Windows\Sandboxie.ini на этот код:");
-            NLogger.Log.Info("\n"+string.Join("\n", readText) );
+            NLogger.Log.Info("\n" + string.Join("\n", readText));
 
 
             return false;
