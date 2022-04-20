@@ -1,14 +1,13 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using SteamAuth;
+using SteamLibrary.Core;
+using SteamLibrary.Entities;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Windows.Forms;
-using Newtonsoft.Json;
-using SteamAuth;
-using SteamLibrary;
-using SteamLibrary.Core;
-using SteamLibrary.Entities;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace AccountCreator
@@ -220,7 +219,8 @@ namespace AccountCreator
                 _key = myRijndael.Key;
                 _iv = myRijndael.IV;
                 generateKeyButton.Enabled = false;
-                keyLabel.Text = "Key loaded";
+                keyLabel.Text = "Loaded";
+                listBoxLog.Log(LogWindow.Level.Warning, "Key in the program folder");
             }
 
             CheckFields();

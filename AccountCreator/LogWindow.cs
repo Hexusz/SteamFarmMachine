@@ -46,12 +46,12 @@ namespace AccountCreator
                     e.DrawBackground();
                     e.DrawFocusRectangle();
 
-                    LogEvent logEvent = ((ListBox) sender).Items[e.Index] as LogEvent;
+                    LogEvent logEvent = ((ListBox)sender).Items[e.Index] as LogEvent;
 
                     // SafeGuard against wrong configuration of list box
                     if (logEvent == null)
                     {
-                        logEvent = new LogEvent(Level.Critical, ((ListBox) sender).Items[e.Index].ToString());
+                        logEvent = new LogEvent(Level.Critical, ((ListBox)sender).Items[e.Index].ToString());
                     }
 
                     Color color;
@@ -147,7 +147,7 @@ namespace AccountCreator
                     case Level.Info: return "Info";
                     case Level.Success: return "Success";
                     case Level.Debug: return "Debug";
-                    default: return string.Format("<value={0}>", (int) level);
+                    default: return string.Format("<value={0}>", (int)level);
                 }
             }
 
@@ -168,7 +168,7 @@ namespace AccountCreator
 
                     /* {5} */ LevelName(logEvent.Level)[0],
                     /* {6} */ LevelName(logEvent.Level),
-                    /* {7} */ (int) logEvent.Level,
+                    /* {7} */ (int)logEvent.Level,
 
                     /* {8} */ message);
             }
@@ -186,7 +186,7 @@ namespace AccountCreator
                         selectedItemsAsRTFText.AppendFormat(@"{{\f0\fs16\chshdng0\chcbpat{0}\cb{0}\cf{1} ",
                             (logEvent.Level == Level.Critical) ? 2 : 1,
                             (logEvent.Level == Level.Critical) ? 1 :
-                            ((int) logEvent.Level > 5) ? 6 : ((int) logEvent.Level) + 1);
+                            ((int)logEvent.Level > 5) ? 6 : ((int)logEvent.Level) + 1);
                         selectedItemsAsRTFText.Append(FormatALogEventMessage(logEvent, _messageFormat));
                         selectedItemsAsRTFText.AppendLine(@"\par}");
                     }
