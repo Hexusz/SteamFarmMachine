@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using SteamAuth;
 using SteamLibrary;
 using SteamLibrary.Core;
+using SteamLibrary.Entities;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace AccountCreator

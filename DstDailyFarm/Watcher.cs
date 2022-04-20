@@ -17,13 +17,13 @@ namespace DstDailyFarm
             NLogger.Log.Info("Запуск приложения");
             AppFunc.LoadCryptKey();
             MainConfig = DstFunc.LoadConfig().Result;
-            Accounts = AppFunc.LoadAccounts().Result.OrderBy(x => x.Name).ToList();
+            Accounts = AppFunc.LoadAccounts().Result.OrderBy(x => x.SteamGuardAccount.AccountName).ToList();
 
             var index = 0;
             foreach (var account in Accounts)
             {
-                NLogger.Log.Info($"----------Текущий аккаунт {account.Name}----------");
-                NLogger.Log.Info($"Предметов в инвентаре было: {SteamFunc.GetItemsCount(account.SteamId)}");
+                NLogger.Log.Info($"----------Текущий аккаунт {account.SteamGuardAccount.AccountName}----------");
+                NLogger.Log.Info($"Предметов в инвентаре было: {SteamFunc.GetItemsCount(account.SteamGuardAccount.Session.SteamID.ToString())}");
 
                 var steamLogin = SteamFunc.Login(account, MainConfig.SteamPath);
 
@@ -31,7 +31,7 @@ namespace DstDailyFarm
                 {
                     var farmTask = DstFunc.StartFarm();
                 }
-                NLogger.Log.Info($"Предметов в инвентаре стало: {SteamFunc.GetItemsCount(account.SteamId)}");
+                NLogger.Log.Info($"Предметов в инвентаре стало: {SteamFunc.GetItemsCount(account.SteamGuardAccount.Session.SteamID.ToString())}");
                 index++;
             }
 

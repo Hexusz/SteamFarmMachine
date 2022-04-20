@@ -43,7 +43,7 @@ namespace SteamLibrary.Core
 
             StringBuilder parametersBuilder = new StringBuilder();
 
-            parametersBuilder.Append($" -silent -login {account.Name} {account.Password}");
+            parametersBuilder.Append($" -silent -login {account.SteamGuardAccount.AccountName} {account.Password}");
 
 
             ProcessStartInfo startInfo = new ProcessStartInfo
@@ -67,7 +67,7 @@ namespace SteamLibrary.Core
 
             var t = Type2Fa(account, 0);
             var res = await t;
-            NLogger.Log.Info($"{(res ? ("Успешная авторизация " + account.Name) : ("Ошибка авторизации " + account.Name))}");
+            NLogger.Log.Info($"{(res ? ("Успешная авторизация " + account.SteamGuardAccount.AccountName) : ("Ошибка авторизации " + account.SteamGuardAccount.AccountName))}");
 
             return res;
         }
@@ -100,7 +100,7 @@ namespace SteamLibrary.Core
             SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
             Thread.Sleep(50);
 
-            var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), account.SharedSecret);
+            var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), account.SteamGuardAccount.SharedSecret);
             foreach (char c in code2Fa)
             {
                 SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
@@ -145,7 +145,7 @@ namespace SteamLibrary.Core
             {
                 StringBuilder parametersBuilder = new StringBuilder();
 
-                parametersBuilder.Append($"/box:{account.Name} {sandSteamPath}\\steam.exe -silent -login {account.Name} {account.Password}");
+                parametersBuilder.Append($"/box:{account.SteamGuardAccount.AccountName} {sandSteamPath}\\steam.exe -silent -login {account.SteamGuardAccount.AccountName} {account.Password}");
 
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
@@ -170,7 +170,7 @@ namespace SteamLibrary.Core
                 var t = SandType2Fa(account, 0);
                 var res = await t;
                 NLogger.Log.Info(
-                    $"{(res ? ("Успешная авторизация " + account.Name) : ("Ошибка авторизации " + account.Name))}");
+                    $"{(res ? ("Успешная авторизация " + account.SteamGuardAccount.AccountName) : ("Ошибка авторизации " + account.SteamGuardAccount.AccountName))}");
             }
 
             return true;
@@ -178,16 +178,16 @@ namespace SteamLibrary.Core
 
         private static async Task<bool> SandType2Fa(Account account, int tryCount)
         {
-            var steamLoginWindow = SandSteamUtils.GetSandSteamLoginWindow(account.Name);
-            var steamGuardWindow = SandSteamUtils.GetSandSteamGuardWindow(account.Name);
+            var steamLoginWindow = SandSteamUtils.GetSandSteamLoginWindow(account.SteamGuardAccount.AccountName);
+            var steamGuardWindow = SandSteamUtils.GetSandSteamGuardWindow(account.SteamGuardAccount.AccountName);
 
             while (!steamLoginWindow.IsValid || !steamGuardWindow.IsValid)
             {
                 Thread.Sleep(10);
-                steamLoginWindow = SandSteamUtils.GetSandSteamLoginWindow(account.Name);
-                steamGuardWindow = SandSteamUtils.GetSandSteamGuardWindow(account.Name);
+                steamLoginWindow = SandSteamUtils.GetSandSteamLoginWindow(account.SteamGuardAccount.AccountName);
+                steamGuardWindow = SandSteamUtils.GetSandSteamGuardWindow(account.SteamGuardAccount.AccountName);
 
-                var steamWarningWindow = SandSteamUtils.GetSandSteamWarningWindow(account.Name);
+                var steamWarningWindow = SandSteamUtils.GetSandSteamWarningWindow(account.SteamGuardAccount.AccountName);
                 if (steamWarningWindow.IsValid)
                 {
                     return false;
@@ -204,7 +204,7 @@ namespace SteamLibrary.Core
             SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
             Thread.Sleep(50);
 
-            var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), account.SharedSecret);
+            var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), account.SteamGuardAccount.SharedSecret);
             foreach (char c in code2Fa)
             {
                 SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
@@ -221,7 +221,7 @@ namespace SteamLibrary.Core
 
             Thread.Sleep(5000);
 
-            steamGuardWindow = SandSteamUtils.GetSandSteamGuardWindow(account.Name);
+            steamGuardWindow = SandSteamUtils.GetSandSteamGuardWindow(account.SteamGuardAccount.AccountName);
 
             if (tryCount <= _maxRetry && steamGuardWindow.IsValid)
             {
@@ -323,7 +323,7 @@ namespace SteamLibrary.Core
 
             var readTextJoin = string.Join("\n", readText);
             //Если все аккаунты уже есть в ini файле возвращаем true
-            if (accounts.TrueForAll(x => readTextJoin.Contains($"[{x.Name}]")))
+            if (accounts.TrueForAll(x => readTextJoin.Contains($"[{x.SteamGuardAccount.AccountName}]")))
             {
                 return true;
             }
@@ -354,9 +354,9 @@ namespace SteamLibrary.Core
 
             foreach (var account in accounts)
             {
-                if (readTextJoin.Contains($"[{account.Name}]")) { continue; }
+                if (readTextJoin.Contains($"[{account.SteamGuardAccount.AccountName}]")) { continue; }
                 pastLineList.Add("");
-                pastLineList.Add($"[{account.Name}]");
+                pastLineList.Add($"[{account.SteamGuardAccount.AccountName}]");
                 pastLineList.AddRange(copyLineList);
             }
 
