@@ -14,22 +14,22 @@ namespace AccountCreator
 {
     public partial class Form1 : Form
     {
-        private int idCurrentAccount = 0;
-        private string saveFolder = "";
-        private string mafilesFolder = "";
-
+        private int _idCurrentAccount;
+        private string _saveFolder = "";
+        private string _mafilesFolder = "";
+        private int _maxTryCount=2;
         private static byte[] _key;
 
         private static byte[] _iv;
 
-        public static LogWindow.ListBoxLog listBoxLog;
+        public static LogWindow.ListBoxLog ListBoxLog;
 
-        List<SteamGuardAccount> accounts = new List<SteamGuardAccount>();
+        public List<SteamGuardAccount> Accounts = new List<SteamGuardAccount>();
 
         public Form1()
         {
             InitializeComponent();
-            listBoxLog = new LogWindow.ListBoxLog(listBox1);
+            ListBoxLog = new LogWindow.ListBoxLog(listBox1);
         }
 
         private void pathButton_Click(object sender, EventArgs e)
@@ -37,7 +37,7 @@ namespace AccountCreator
             FolderBrowserDialog FBD = new FolderBrowserDialog();
             if (FBD.ShowDialog() == DialogResult.OK)
             {
-                saveFolder = FBD.SelectedPath;
+                _saveFolder = FBD.SelectedPath;
                 savePathLB.Text = new DirectoryInfo(FBD.SelectedPath).Name;
             }
 
@@ -51,17 +51,25 @@ namespace AccountCreator
 
             var userLogin = new UserLogin(username, password);
             userLogin.TwoFactorCode =
-                SteamFunc.GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), accounts[idCurrentAccount].SharedSecret);
+                SteamFunc.GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), Accounts[_idCurrentAccount].SharedSecret);
 
             LoginResult response = LoginResult.BadCredentials;
 
+            var tryCount = 0;
+
             while ((response = userLogin.DoLogin()) != LoginResult.LoginOkay)
             {
+                tryCount++;
+                if (tryCount > _maxTryCount)
+                {
+                    ListBoxLog.Log(LogWindow.Level.Warning, "Error: Failed logins, check account.");
+                    return;
+                }
                 switch (response)
                 {
                     case LoginResult.NeedEmail:
                         InputForm emailForm = new InputForm("Enter the code sent to your email:");
-                        listBoxLog.Log(LogWindow.Level.Warning, "Enter the code sent to your email:");
+                        ListBoxLog.Log(LogWindow.Level.Warning, "Enter the code sent to your email:");
                         emailForm.ShowDialog();
                         if (emailForm.Canceled)
                         {
@@ -83,34 +91,34 @@ namespace AccountCreator
                         break;
 
                     case LoginResult.BadRSA:
-                        listBoxLog.Log(LogWindow.Level.Error, "Error: Steam returned \"BadRSA\"");
+                        ListBoxLog.Log(LogWindow.Level.Error, "Error: Steam returned \"BadRSA\"");
                         return;
 
                     case LoginResult.BadCredentials:
-                        listBoxLog.Log(LogWindow.Level.Error, "Error: Username or password was incorrect.");
+                        ListBoxLog.Log(LogWindow.Level.Error, "Error: Username or password was incorrect.");
                         return;
 
                     case LoginResult.TooManyFailedLogins:
-                        listBoxLog.Log(LogWindow.Level.Error, "Error: Too many failed logins, try again later.");
+                        ListBoxLog.Log(LogWindow.Level.Error, "Error: Too many failed logins, try again later.");
                         return;
 
                     case LoginResult.GeneralFailure:
-                        listBoxLog.Log(LogWindow.Level.Error, "Error: Steam returned \"GeneralFailure\".");
+                        ListBoxLog.Log(LogWindow.Level.Error, "Error: Steam returned \"GeneralFailure\".");
                         return;
                 }
             }
 
-            listBoxLog.Log(LogWindow.Level.Success, "Login succeeded!");
-            listBoxLog.Log(LogWindow.Level.Success, $"Login: {username} SteamId: {userLogin.Session.SteamID}");
+            ListBoxLog.Log(LogWindow.Level.Success, "Login succeeded!");
+            ListBoxLog.Log(LogWindow.Level.Success, $"Login: {username} SteamId: {userLogin.Session.SteamID}");
 
-            FileStream fsWrite = new FileStream(Path.Combine(saveFolder, accounts[idCurrentAccount].AccountName + ".acc"), FileMode.Create, FileAccess.Write);
+            FileStream fsWrite = new FileStream(Path.Combine(_saveFolder, Accounts[_idCurrentAccount].AccountName + ".acc"), FileMode.Create, FileAccess.Write);
             var serializeAccount = new Account();
             serializeAccount.Password = password;
-            serializeAccount.SteamGuardAccount = accounts[idCurrentAccount];
+            serializeAccount.SteamGuardAccount = Accounts[_idCurrentAccount];
             string serializeProfile = Newtonsoft.Json.JsonConvert.SerializeObject(serializeAccount);
             fsWrite.Write(EncryptStringToBytes(serializeProfile));
             fsWrite.Close();
-            listBoxLog.Log(LogWindow.Level.Success, $"Account {username} save to file");
+            ListBoxLog.Log(LogWindow.Level.Success, $"Account {username} save to file");
 
             textBox1.Text = "";
             textBox2.Text = "";
@@ -121,7 +129,7 @@ namespace AccountCreator
         {
             if (textBox1.Text == "" || textBox2.Text == "")
             {
-                listBoxLog.Log(LogWindow.Level.Warning, "Fill in the text fields");
+                ListBoxLog.Log(LogWindow.Level.Warning, "Fill in the text fields");
                 return;
             }
 
@@ -130,7 +138,7 @@ namespace AccountCreator
 
         private void CheckFields()
         {
-            if (_key != null && _iv != null && saveFolder.Length > 0 && mafilesFolder.Length > 0)
+            if (_key != null && _iv != null && _saveFolder.Length > 0 && _mafilesFolder.Length > 0)
             {
                 panel1.Enabled = true;
             }
@@ -138,14 +146,14 @@ namespace AccountCreator
 
         private void NextAccount()
         {
-            if (accounts.Count == 0) { return; }
+            if (Accounts.Count == 0) { return; }
 
-            if (idCurrentAccount < accounts.Count - 1)
-                idCurrentAccount++;
+            if (_idCurrentAccount < Accounts.Count - 1)
+                _idCurrentAccount++;
 
-            listBoxLog.Log(LogWindow.Level.Info, $"Enter password for {accounts[idCurrentAccount].AccountName}");
+            ListBoxLog.Log(LogWindow.Level.Info, $"Enter password for {Accounts[_idCurrentAccount].AccountName}");
 
-            textBox1.Text = accounts[idCurrentAccount].AccountName;
+            textBox1.Text = Accounts[_idCurrentAccount].AccountName;
         }
 
         private static byte[] EncryptStringToBytes(string profileText)
@@ -220,7 +228,7 @@ namespace AccountCreator
                 _iv = myRijndael.IV;
                 generateKeyButton.Enabled = false;
                 keyLabel.Text = "Loaded";
-                listBoxLog.Log(LogWindow.Level.Warning, "Key in the program folder");
+                ListBoxLog.Log(LogWindow.Level.Warning, "Key in the program folder");
             }
 
             CheckFields();
@@ -233,8 +241,8 @@ namespace AccountCreator
             {
                 if (fldrDlg.ShowDialog() == DialogResult.OK)
                 {
-                    mafilesFolder = fldrDlg.SelectedPath;
-                    mafileLabel.Text = new DirectoryInfo(mafilesFolder).Name;
+                    _mafilesFolder = fldrDlg.SelectedPath;
+                    mafileLabel.Text = new DirectoryInfo(_mafilesFolder).Name;
                 }
                 else
                 {
@@ -242,7 +250,7 @@ namespace AccountCreator
                 }
             }
 
-            mafiles.AddRange(Directory.GetFiles(mafilesFolder, "*.maFile", SearchOption.TopDirectoryOnly));
+            mafiles.AddRange(Directory.GetFiles(_mafilesFolder, "*.maFile", SearchOption.TopDirectoryOnly));
 
             foreach (var entry in mafiles)
             {
@@ -250,21 +258,21 @@ namespace AccountCreator
 
                 var account = JsonConvert.DeserializeObject<SteamAuth.SteamGuardAccount>(fileText);
                 if (account == null) continue;
-                accounts.Add(account);
+                Accounts.Add(account);
             }
 
-            textBox1.Text = accounts[idCurrentAccount].AccountName;
+            textBox1.Text = Accounts[_idCurrentAccount].AccountName;
             CheckFields();
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            listBoxLog.Log(LogWindow.Level.Info, "Please select all folders");
+            ListBoxLog.Log(LogWindow.Level.Info, "Please select all folders");
         }
 
         private void skipButton_Click(object sender, EventArgs e)
         {
-            listBoxLog.Log(LogWindow.Level.Info, "Skip account");
+            ListBoxLog.Log(LogWindow.Level.Info, "Skip account");
             NextAccount();
         }
     }
