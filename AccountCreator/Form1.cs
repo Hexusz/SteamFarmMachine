@@ -150,6 +150,12 @@ namespace AccountCreator
 
             if (_idCurrentAccount < Accounts.Count - 1)
                 _idCurrentAccount++;
+            else
+            {
+                ListBoxLog.Log(LogWindow.Level.Info, "Accounts ended");
+                textBox1.Text = "";
+                return;
+            }
 
             ListBoxLog.Log(LogWindow.Level.Info, $"Enter password for {Accounts[_idCurrentAccount].AccountName}");
 
