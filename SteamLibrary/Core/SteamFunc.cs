@@ -134,44 +134,34 @@ namespace SteamLibrary.Core
             return !steamGuardWindow.IsValid;
         }
 
-        public static async Task<bool> SandLogin(List<Account> accounts, string sandSteamPath, string sandPath)
+        public static async Task<bool> SandLogin(Account account, string sandSteamPath, string sandPath)
         {
-            if (!CheckSandIni(accounts))
+            StringBuilder parametersBuilder = new StringBuilder();
+
+            parametersBuilder.Append($"/box:{account.SteamGuardAccount.AccountName} {sandSteamPath}\\steam.exe -silent -login {account.SteamGuardAccount.AccountName} {account.Password}");
+
+            ProcessStartInfo startInfo = new ProcessStartInfo
             {
+                UseShellExecute = true,
+                FileName = Path.Combine(sandPath, "Start.exe"),
+                WorkingDirectory = sandPath,
+                Arguments = parametersBuilder.ToString()
+            };
+
+            try
+            {
+                Process steamProcess = Process.Start(startInfo);
+                NLogger.Log.Info("Sand Steam запущен");
+            }
+            catch (Exception ex)
+            {
+                NLogger.Log.Warn("Не удалось запустить Sand Steam " + ex.Message);
                 return false;
             }
 
-            foreach (var account in accounts)
-            {
-                StringBuilder parametersBuilder = new StringBuilder();
-
-                parametersBuilder.Append($"/box:{account.SteamGuardAccount.AccountName} {sandSteamPath}\\steam.exe -silent -login {account.SteamGuardAccount.AccountName} {account.Password}");
-
-
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    UseShellExecute = true,
-                    FileName = Path.Combine(sandPath, "Start.exe"),
-                    WorkingDirectory = sandPath,
-                    Arguments = parametersBuilder.ToString()
-                };
-
-                try
-                {
-                    Process steamProcess = Process.Start(startInfo);
-                    NLogger.Log.Info("Sand Steam запущен");
-                }
-                catch (Exception ex)
-                {
-                    NLogger.Log.Warn("Не удалось запустить Sand Steam " + ex.Message);
-                    return false;
-                }
-
-                var t = SandType2Fa(account, 0);
-                var res = await t;
-                NLogger.Log.Info(
-                    $"{(res ? ("Успешная авторизация " + account.SteamGuardAccount.AccountName) : ("Ошибка авторизации " + account.SteamGuardAccount.AccountName))}");
-            }
+            var t = SandType2Fa(account, 0);
+            var res = await t;
+            NLogger.Log.Info($"{(res ? ("Успешная авторизация " + account.SteamGuardAccount.AccountName) : ("Ошибка авторизации " + account.SteamGuardAccount.AccountName))}");
 
             return true;
         }
