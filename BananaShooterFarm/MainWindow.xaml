@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:BananaShooterFarm"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
+
     <Grid>
         <Menu Height="25" VerticalAlignment="Top">
             <MenuItem Header="Main">
@@ -18,19 +19,16 @@
                 <MenuItem Header="Exit" ></MenuItem>
             </MenuItem>
         </Menu>
-        <ItemsControl Name="icTodoList">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Grid Margin="0,0,0,5">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="100" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding Title}" />
-                        <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Completion}" />
-                    </Grid>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <ListView Margin="0,25,0,0" Name="ListViewAccounts">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Account" DisplayMemberBinding="{Binding Account}"/>
+                    <GridViewColumn Header="PID" DisplayMemberBinding="{Binding PID}"/>
+                    <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}"/>
+                    <GridViewColumn Header="Items" DisplayMemberBinding="{Binding Items}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
     </Grid>
 </Window>

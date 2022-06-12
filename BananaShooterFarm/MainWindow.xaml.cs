@@ -15,6 +15,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using BananaShooterFarm.Core;
+using BananaShooterFarm.Entities;
 using SteamLibrary.Core;
 using SteamLibrary.Entities;
 
@@ -28,6 +29,7 @@ namespace BananaShooterFarm
         private Timer _timer = null;
 
         private static List<Account> Accounts { get; set; }
+        public static List<AccountStats> AccountStatses = new List<AccountStats>();
         private static Dictionary<string, Process> PIDs = new Dictionary<string, Process>();
 
         public MainWindow()
@@ -36,10 +38,23 @@ namespace BananaShooterFarm
             NLogger.Log.Info("Запуск приложения");
             AppFunc.LoadCryptKey();
             Accounts = AppFunc.LoadAccounts().Result.OrderBy(x => x.SteamGuardAccount.AccountName).ToList();
+
+            foreach (var account in Accounts)
+            {
+                AccountStatses.Add(new AccountStats() { Account = account.SteamGuardAccount.AccountName, Items = 0, Status = "Wait...", PID = -1 });
+
+                ListViewItem lv = new ListViewItem();
+
+                lv.Content = new AccountStats()
+                { Account = account.SteamGuardAccount.AccountName, Items = 0, Status = "Wait...", PID = -1 };
+                ListViewAccounts.Items.Add(lv);
+            }
+
         }
 
         private async void LoginAccounts_Click(object sender, RoutedEventArgs e)
         {
+
             LoginAccountsItem.IsEnabled = false;
             await Task.Run(LoginAccounts);
             LoginAccountsItem.IsEnabled = true;
