@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading;
+using System.Timers;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,11 +27,12 @@ namespace BananaShooterFarm
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Timer _timer = null;
+        private static Timer timerCheckAccounts;
+        private static bool updateNow;
 
         private static List<Account> Accounts { get; set; }
-        public static List<AccountStats> AccountStatses = new List<AccountStats>();
-        private static Dictionary<string, Process> PIDs = new Dictionary<string, Process>();
+        private static AppConfig AppConfig { get; set; }
+        private ObservableCollection<AccountStats> accountStatses = new ObservableCollection<AccountStats>();
 
         public MainWindow()
         {
@@ -38,18 +40,14 @@ namespace BananaShooterFarm
             NLogger.Log.Info("Запуск приложения");
             AppFunc.LoadCryptKey();
             Accounts = AppFunc.LoadAccounts().Result.OrderBy(x => x.SteamGuardAccount.AccountName).ToList();
+            AppConfig = BSFunc.LoadConfig().Result;
 
             foreach (var account in Accounts)
             {
-                AccountStatses.Add(new AccountStats() { Account = account.SteamGuardAccount.AccountName, Items = 0, Status = "Wait...", PID = -1 });
-
-                ListViewItem lv = new ListViewItem();
-
-                lv.Content = new AccountStats()
-                { Account = account.SteamGuardAccount.AccountName, Items = 0, Status = "Wait...", PID = -1 };
-                ListViewAccounts.Items.Add(lv);
+                accountStatses.Add(new AccountStats() { Account = account.SteamGuardAccount.AccountName, Items = 0, Status = AccountStatus.Wait, PID = -1 });
             }
 
+            ListViewAccounts.ItemsSource = accountStatses;
         }
 
         private async void LoginAccounts_Click(object sender, RoutedEventArgs e)
@@ -65,6 +63,7 @@ namespace BananaShooterFarm
             //Проверка наличия аккаунтов в песочнице
             if (!SteamFunc.CheckSandIni(Accounts))
             {
+                MessageBox.Show("Sand not configured");
                 return;
             }
 
@@ -74,11 +73,21 @@ namespace BananaShooterFarm
             {
                 NLogger.Log.Info($"----------Текущий аккаунт {account.SteamGuardAccount.AccountName}----------");
 
-                var steamLogin = await SteamFunc.SandLogin(account, "C:\\Sandbox\\Steam", "C:\\Program Files\\Sandboxie-Plus");
+                var currentAcc = accountStatses.FirstOrDefault(x => x.Account == account.SteamGuardAccount.AccountName);
+                currentAcc.Status = AccountStatus.Launch;
+
+                var steamLogin = await SteamFunc.SandLogin(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
 
                 if (steamLogin)
                 {
-                    var proc = await BSFunc.BSStart(account, "C:\\Sandbox\\Steam", "C:\\Program Files\\Sandboxie-Plus");
+                    var proc = await BSFunc.BSStart(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
+                    
+                    currentAcc.PID=proc.Id;
+                    currentAcc.Status=AccountStatus.Ready;
+                }
+                else
+                {
+                    currentAcc.Status = AccountStatus.Error;
                 }
 
                 index++;
@@ -86,12 +95,25 @@ namespace BananaShooterFarm
 
             await Task.Delay(5000);
 
-            _timer = new Timer(TimerRefreshPIDs, null, 0, 5000);
+            timerCheckAccounts = new Timer { Interval = 2000 };
+            timerCheckAccounts.Elapsed += WatchingAccountsTimer;
+            timerCheckAccounts.Start();
         }
 
-        private static void TimerRefreshPIDs(Object o)
+        private async void WatchingAccountsTimer(Object source, ElapsedEventArgs e)
         {
-            PIDs = BSFunc.RefreshPIDs(Accounts);
+            if (updateNow) { return; }
+
+            updateNow = true;
+
+            //Обновляем все PID
+            BSFunc.RefreshPIDs(accountStatses);
+
+            //Проверяем работу аккаунтов
+            await BSFunc.CheckingAndFixRunningAccounts(accountStatses);
+
+            updateNow = false;
+
         }
     }
 }

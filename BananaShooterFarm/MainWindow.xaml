@@ -22,10 +22,10 @@
         <ListView Margin="0,25,0,0" Name="ListViewAccounts">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Account" DisplayMemberBinding="{Binding Account}"/>
-                    <GridViewColumn Header="PID" DisplayMemberBinding="{Binding PID}"/>
-                    <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}"/>
-                    <GridViewColumn Header="Items" DisplayMemberBinding="{Binding Items}"/>
+                    <GridViewColumn Header="Account" DisplayMemberBinding="{Binding Account}" Width="150"/>
+                    <GridViewColumn Header="PID" DisplayMemberBinding="{Binding PID}" Width="70"/>
+                    <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="100"/>
+                    <GridViewColumn Header="Items" DisplayMemberBinding="{Binding Items}" Width="50"/>
                 </GridView>
             </ListView.View>
         </ListView>

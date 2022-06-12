@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using BananaShooterFarm.Entities;
+using Newtonsoft.Json;
 using SteamLibrary.Core;
 using SteamLibrary.Entities;
 
@@ -52,24 +57,73 @@ namespace BananaShooterFarm.Core
             }
         }
 
-        public static Dictionary<string, Process> RefreshPIDs(List<Account> accounts)
+        public static void RefreshPIDs(ObservableCollection<AccountStats> accountStatses)
         {
-            Dictionary<string, Process> PIDs = new Dictionary<string, Process>();
-
-            foreach (var account in accounts)
+            foreach (var account in accountStatses)
             {
-                Process[] processlist = Process.GetProcesses();
+                var accProc = -1;
+                var processlist = Process.GetProcesses();
                 foreach (Process process in processlist)
                 {
-                    if (process.MainWindowTitle.Contains(account.SteamGuardAccount.AccountName) &&
+                    if (process.MainWindowTitle.Contains(account.Account) &&
                         process.MainWindowTitle.Contains("Banana Shooter"))
                     {
-                        PIDs.Add(account.SteamGuardAccount.AccountName, process);
+                        accProc = process.Id;
                     }
                 }
+
+                account.PID = accProc;
+            }
+        }
+
+        public static async Task<AppConfig> LoadConfig()
+        {
+            var cfgPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "BS.conf");
+            if (File.Exists(cfgPath))
+            {
+                using (StreamReader file = File.OpenText(cfgPath))
+                {
+                    JsonSerializer serializer = new JsonSerializer();
+                    var conf = (AppConfig)serializer.Deserialize(file, typeof(AppConfig));
+                    return conf;
+                }
+            }
+            else
+            {
+                var defaultConfig = new AppConfig()
+                {
+                    SteamPath = @"C:\Program Files (x86)\Steam",
+                    SandBoxiePath = @"C:\Program Files\Sandboxie-Plus",
+                };
+
+                File.WriteAllText(cfgPath, JsonConvert.SerializeObject(defaultConfig));
+                NLogger.Log.Info("Загрузка конфига завершена");
+                return defaultConfig;
+            }
+        }
+
+        public static async Task<bool> CheckingAndFixRunningAccounts(ObservableCollection<AccountStats> accStats)
+        {
+            foreach (var account in accStats)
+            {
+                try
+                {
+                    Process process = Process.GetProcessById(account.PID);
+
+                    if (!(process.MainWindowTitle.Contains(account.Account) &&
+                          process.MainWindowTitle.Contains("Banana Shooter")))
+                    {
+                        MessageBox.Show("run " + account.Account);
+                    }
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show("error " + account.Account);
+                }
+
             }
 
-            return PIDs;
+            return true;
         }
     }
 }
