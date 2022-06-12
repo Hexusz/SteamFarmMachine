@@ -29,6 +29,7 @@ namespace BananaShooterFarm
     {
         private static Timer timerCheckAccounts;
         private static bool updateNow;
+        private static string master = "";
 
         private static List<Account> Accounts { get; set; }
         private static AppConfig AppConfig { get; set; }
@@ -45,9 +46,15 @@ namespace BananaShooterFarm
             foreach (var account in Accounts)
             {
                 accountStatses.Add(new AccountStats() { Account = account.SteamGuardAccount.AccountName, Items = 0, Status = AccountStatus.Wait, PID = -1 });
+
+                MenuItem masterItem = new MenuItem();
+                masterItem.Header = account.SteamGuardAccount.AccountName;
+                MenuItem.Items.Add(masterItem);
+                masterItem.AddHandler(MenuItem.ClickEvent, new RoutedEventHandler(SetMaster));
             }
 
             ListViewAccounts.ItemsSource = accountStatses;
+            LoginAccountsItem.IsEnabled = false;
         }
 
         private async void LoginAccounts_Click(object sender, RoutedEventArgs e)
@@ -81,9 +88,9 @@ namespace BananaShooterFarm
                 if (steamLogin)
                 {
                     var proc = await BSFunc.BSStart(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
-                    
-                    currentAcc.PID=proc.Id;
-                    currentAcc.Status=AccountStatus.Ready;
+
+                    currentAcc.PID = proc.Id;
+                    currentAcc.Status = AccountStatus.Ready;
                 }
                 else
                 {
@@ -114,6 +121,16 @@ namespace BananaShooterFarm
 
             updateNow = false;
 
+        }
+
+        private void SetMaster(object sender, RoutedEventArgs e)
+        {
+            if (master == "")
+            {
+                LoginAccountsItem.IsEnabled = true;
+            }
+
+            master = (sender as MenuItem)?.Header.ToString();
         }
     }
 }

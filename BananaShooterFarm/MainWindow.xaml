@@ -11,9 +11,7 @@
         <Menu Height="25" VerticalAlignment="Top">
             <MenuItem Header="Main">
                 <MenuItem Header="Login Accounts" Click="LoginAccounts_Click" Name="LoginAccountsItem"></MenuItem>
-                <MenuItem Header="Open Project" >
-                    <MenuItem Header="WinForms"></MenuItem>
-                    <MenuItem Header="WPF" ></MenuItem>
+                <MenuItem Header="Master" Name="MenuItem">
                 </MenuItem>
                 <Separator />
                 <MenuItem Header="Exit" ></MenuItem>
