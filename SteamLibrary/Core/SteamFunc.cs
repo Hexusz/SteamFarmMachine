@@ -269,11 +269,11 @@ namespace SteamLibrary.Core
             return Encoding.UTF8.GetString(codeArray);
         }
 
-        public static int GetItemsCount(string steamId)
+        public static int GetItemsCount(string steamId, string appId, string contextId)
         {
             try
             {
-                string url = $"https://steamcommunity.com/inventory/{steamId}/322330/1";
+                string url = $"https://steamcommunity.com/inventory/{steamId}/{appId}/{contextId}";
                 HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
                 HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
                 string response;

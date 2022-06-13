@@ -28,9 +28,12 @@ namespace BananaShooterFarm
     public partial class MainWindow : Window
     {
         private static Timer timerCheckAccounts;
+        private static Timer timerCheckItems;
+        private static int currentCheckItems;
         private static bool updateNow;
         private static string master = "";
 
+        Dictionary<string, int> accItems = new Dictionary<string, int>();
         private static List<Account> Accounts { get; set; }
         private static AppConfig AppConfig { get; set; }
         private ObservableCollection<AccountStats> accountStatses = new ObservableCollection<AccountStats>();
@@ -80,6 +83,8 @@ namespace BananaShooterFarm
             {
                 NLogger.Log.Info($"----------Текущий аккаунт {account.SteamGuardAccount.AccountName}----------");
 
+                accItems.Add(account.SteamGuardAccount.AccountName, SteamFunc.GetItemsCount(account.SteamGuardAccount.Session.SteamID.ToString(), "1949740", "2"));
+
                 var currentAcc = accountStatses.FirstOrDefault(x => x.Account == account.SteamGuardAccount.AccountName);
                 currentAcc.Status = AccountStatus.Launching;
 
@@ -101,6 +106,10 @@ namespace BananaShooterFarm
             }
 
             await Task.Delay(5000);
+
+            timerCheckItems = new Timer { Interval = 31000 };
+            timerCheckItems.Elapsed += CheckItemsTimer;
+            timerCheckItems.Start();
 
             timerCheckAccounts = new Timer { Interval = 2000 };
             timerCheckAccounts.Elapsed += WatchingAccountsTimer;
@@ -127,6 +136,41 @@ namespace BananaShooterFarm
 
             updateNow = false;
 
+        }
+
+        private void CheckItemsTimer(Object source, ElapsedEventArgs e)
+        {
+            try
+            {
+                var currentAccount = Accounts[currentCheckItems].SteamGuardAccount;
+
+                var oldAccItems = accItems
+                    .FirstOrDefault(x => x.Key == currentAccount.AccountName).Value;
+
+                var currentAccountItems =
+                    SteamFunc.GetItemsCount(currentAccount.Session.SteamID.ToString(), "1949740", "2");
+
+                var difference =  currentAccountItems - oldAccItems;
+
+                if (difference != 0)
+                {
+                    accountStatses.FirstOrDefault(x => x.Account == currentAccount.AccountName).Items = difference;
+                }
+
+            }
+            catch (Exception exception)
+            {
+                NLogger.Log.Error("Ошибка получения списка предметов " + exception);
+            }
+
+            if (currentCheckItems < Accounts.Count - 1)
+            {
+                currentCheckItems++;
+            }
+            else
+            {
+                currentCheckItems = 0;
+            }
         }
 
         private void SetMaster(object sender, RoutedEventArgs e)
