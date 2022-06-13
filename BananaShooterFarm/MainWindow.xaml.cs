@@ -116,11 +116,14 @@ namespace BananaShooterFarm
             //Обновляем все PID
             BSFunc.RefreshPIDs(accountStatses);
 
-            //Проверяем работу аккаунтов
+            //Проверяем работу аккаунтов и чиним не рабочие
             await BSFunc.CheckingAndFixRunningAccounts(accountStatses);
 
             //Настраиваем аккаунты
             await BSFunc.SettingAccounts(accountStatses, master);
+
+            //Проверяем состояние аккаунта
+            await BSFunc.CheckStateAccounts(accountStatses, master);
 
             updateNow = false;
 

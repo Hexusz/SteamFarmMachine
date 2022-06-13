@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -134,25 +135,200 @@ namespace BananaShooterFarm.Core
             //Ищем мастер аккаунт
             var masterAcc = accStats.FirstOrDefault(x => x.Account == master);
 
-            if(masterAcc.Status == AccountStatus.Launched)
+            if (masterAcc.Status == AccountStatus.Launched)
             {
                 await SettingMasterAccount(masterAcc.PID);
-                masterAcc.Status = AccountStatus.Ready;
+
+                lock (masterAcc)
+                {
+                    masterAcc.Status = AccountStatus.InGame;
+                }
             }
 
             //Настраиваем все не мастер аккаунты
             foreach (var account in accStats)
             {
-                if (account.Account == masterAcc.Account) { continue;}
+                if (account.Account == masterAcc.Account) { continue; }
 
                 if (account.Status == AccountStatus.Launched)
                 {
                     await SettingStandardAccount(account.PID);
-                    account.Status = AccountStatus.Ready;
+
+                    lock (account)
+                    {
+                        account.Status = AccountStatus.InGame;
+                    }
                 }
             }
 
             return true;
+        }
+
+        public static async Task<bool> CheckStateAccounts(ObservableCollection<AccountStats> accStats, string master)
+        {
+            await Task.Delay(2000);
+
+            foreach (var account in accStats)
+            {
+                Process accountProcess = new Process();
+                var handler = IntPtr.Zero;
+
+                try
+                {
+                    accountProcess = Process.GetProcessById(account.PID);
+                }
+                catch (Exception e)
+                {
+                    NLogger.Log.Error("Не удалось получить процесс");
+                    return false;
+                }
+
+                handler = accountProcess.MainWindowHandle;
+
+                var playStatus = await CheckPlayStatus(account.PID);
+
+                NLogger.Log.Info($"Cостояние аккаунта {account.Account} равно {playStatus}");
+
+                switch (playStatus)
+                {
+                    case PlayStatus.PlayGame:
+                        account.Status = AccountStatus.PlayGame;
+                        continue;
+
+                    case PlayStatus.Pause:
+                        SteamUtils.SetForegroundWindow(handler);
+                        await Task.Delay(500);
+                        SteamUtils.SendEsc(handler, VirtualInputMethod.PostMessage);
+                        await Task.Delay(500);
+                        playStatus = await CheckPlayStatus(account.PID);
+
+                        if (playStatus == PlayStatus.ReadyToPlay)
+                        {
+                            goto case PlayStatus.ReadyToPlay;
+                        }
+
+                        if (playStatus == PlayStatus.NotReady)
+                        {
+                            goto case PlayStatus.NotReady;
+                        }
+                        break;
+
+                    case PlayStatus.ReadyToPlay:
+                        account.Status = AccountStatus.ReadyToPlay;
+                        continue;
+
+                    case PlayStatus.NotReady:
+                        SteamUtils.SetForegroundWindow(handler);
+                        await Task.Delay(500);
+                        SteamUtils.SendE(handler, VirtualInputMethod.PostMessage);
+                        await Task.Delay(500);
+                        playStatus = await CheckPlayStatus(account.PID);
+                        if (playStatus == PlayStatus.ReadyToPlay)
+                        {
+                            account.Status = AccountStatus.ReadyToPlay;
+                            continue;
+                        }
+                        break;
+
+                    case PlayStatus.None:
+                        await Task.Delay(10000);
+                        SteamUtils.SetForegroundWindow(handler);
+                        await Task.Delay(500);
+                        playStatus = await CheckPlayStatus(account.PID);
+
+                        if (playStatus == PlayStatus.ReadyToPlay)
+                        {
+                            goto case PlayStatus.ReadyToPlay;
+                        }
+
+                        if (playStatus == PlayStatus.Pause)
+                        {
+                            goto case PlayStatus.Pause;
+                        }
+
+                        if (playStatus == PlayStatus.NotReady)
+                        {
+                            goto case PlayStatus.NotReady;
+                        }
+                        break;
+
+                    case PlayStatus.Error:
+                        //Ошибка приложения
+                        break;
+                }
+
+
+            }
+
+            return true;
+        }
+
+        public static async Task<PlayStatus> CheckPlayStatus(int pid)
+        {
+            Process accountProcess = new Process();
+            var handler = IntPtr.Zero;
+
+            try
+            {
+                accountProcess = Process.GetProcessById(pid);
+            }
+            catch (Exception e)
+            {
+                NLogger.Log.Error("Не удалось получить процесс мастера");
+                return PlayStatus.Error;
+            }
+
+            handler = accountProcess.MainWindowHandle;
+
+
+            SteamUtils.SetForegroundWindow(handler);
+            await Task.Delay(200);
+            var rect = new SteamUtils.Rect();
+            SteamUtils.GetWindowRect(handler, ref rect);
+            await Task.Delay(1000);
+
+            var yellowFinded = false;
+            var blueFinded = false;
+
+            for (int i = 0; i < 20; i++)
+            {
+                var pixelColor = SteamUtils.GetPixelColor(rect.Right - 40 - i, rect.Top + 47);
+
+                if (pixelColor == Color.FromArgb(255, 245, 233, 0))
+                {
+                    yellowFinded = true;
+                }
+                else if (pixelColor == Color.FromArgb(255, 0, 104, 152))
+                {
+                    blueFinded = true;
+                }
+            }
+
+            if (yellowFinded && blueFinded)
+            {
+                return PlayStatus.Pause;
+            }
+
+            for (int i = 0; i < 20; i++)
+            {
+                var pixelColor = SteamUtils.GetPixelColor((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.78) + i, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 91));
+                if (pixelColor == Color.FromArgb(255, 0, 255, 0))
+                {
+                    return PlayStatus.ReadyToPlay;
+                }
+
+                if (pixelColor == Color.FromArgb(255, 255, 0, 0))
+                {
+                    return PlayStatus.NotReady;
+                }
+            }
+
+            if (SteamUtils.GetPixelColor(rect.Right - 33, rect.Bottom - 33) == Color.FromArgb(255, 255, 255, 255))
+            {
+                return PlayStatus.PlayGame;
+            }
+
+            return PlayStatus.None;
         }
 
         public static async Task<bool> SettingMasterAccount(int pid)
@@ -182,13 +358,13 @@ namespace BananaShooterFarm.Core
             SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 44));
             SteamUtils.SetForegroundWindow(handler);
             await Task.Delay(2000);
-            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2+33, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 48));
+            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2 + 33, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 48));
             SteamUtils.SetForegroundWindow(handler);
             await Task.Delay(1000);
             SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2 + 100, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 96));
             SteamUtils.SetForegroundWindow(handler);
             await Task.Delay(10000);
-            SteamUtils.SendEsc(handler,VirtualInputMethod.PostMessage);
+            SteamUtils.SendEsc(handler, VirtualInputMethod.PostMessage);
             await Task.Delay(3000);
             SteamUtils.LeftMouseClickSlow(rect.Right - 40, rect.Top + 47);
             await Task.Delay(1000);
@@ -207,7 +383,7 @@ namespace BananaShooterFarm.Core
             }
             catch (Exception e)
             {
-                NLogger.Log.Error("Не удалось получить процесс мастера");
+                NLogger.Log.Error("Не удалось получить процесс мастера " + e.Message);
                 return false;
             }
 
@@ -229,6 +405,7 @@ namespace BananaShooterFarm.Core
             SteamUtils.SendCtrlhotKey('V');
             await Task.Delay(1000);
             SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2 + 30, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 36));
+            await Task.Delay(1000);
 
             return true;
         }

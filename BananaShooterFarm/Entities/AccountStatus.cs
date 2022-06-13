@@ -5,7 +5,9 @@
         Wait,
         Launching,
         Launched,
-        Ready,
+        InGame,
+        PlayGame,
+        ReadyToPlay,
         Error
     }
 }

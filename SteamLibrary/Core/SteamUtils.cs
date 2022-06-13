@@ -47,6 +47,14 @@ namespace SteamLibrary
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, uint dwExtraInfo);
 
+        [DllImport("gdi32.dll")]
+        static extern uint GetPixel(IntPtr hdc, int nXPos, int nYPos);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetDC(IntPtr hwnd);
+        [DllImport("user32.dll")]
+        static extern Int32 ReleaseDC(IntPtr hwnd, IntPtr hdc);
+
         public struct POINT
         {
             private int X;
@@ -72,6 +80,7 @@ namespace SteamLibrary
         public const int VK_RETURN = 0x0D;
         public const int VK_ESCAPE = 0x1B;
         public const int VK_TAB = 0x09;
+        public const int VK_E = 0x45;
         public const int VK_SPACE = 0x20;
         public const int MOUSEEVENTF_LEFTDOWN = 0x02;
         public const int MOUSEEVENTF_LEFTUP = 0x04;
@@ -185,6 +194,22 @@ namespace SteamLibrary
             }
         }
 
+        public static void SendE(IntPtr hwnd, VirtualInputMethod inputMethod)
+        {
+            switch (inputMethod)
+            {
+                case VirtualInputMethod.SendMessage:
+                    SendMessage(hwnd, WM_KEYDOWN, VK_E, IntPtr.Zero);
+                    SendMessage(hwnd, WM_KEYUP, VK_E, IntPtr.Zero);
+                    break;
+
+                case VirtualInputMethod.PostMessage:
+                    PostMessage(hwnd, WM_KEYDOWN, (IntPtr)VK_E, IntPtr.Zero);
+                    PostMessage(hwnd, WM_KEYUP, (IntPtr)VK_E, IntPtr.Zero);
+                    break;
+            }
+        }
+
         private static Point GetCursorPosition()
         {
             GetCursorPos(out var lpPoint);
@@ -223,6 +248,15 @@ namespace SteamLibrary
             keybd_event((byte)key, 0, 0, 0);
             keybd_event((byte)key, 0, 0x2, 0);
             keybd_event(0x11, 0, 0x2, 0);
+        }
+
+        public static Color GetPixelColor(int x, int y)
+        {
+            IntPtr hdc = GetDC(IntPtr.Zero);
+            uint pixel = GetPixel(hdc, x, y);
+            ReleaseDC(IntPtr.Zero, hdc);
+            Color color = Color.FromArgb((int)(pixel & 0x000000FF), (int)(pixel & 0x0000FF00) >> 8, (int)(pixel & 0x00FF0000) >> 16);
+            return color;
         }
 
         public static void CloseWindow(IntPtr handle)
