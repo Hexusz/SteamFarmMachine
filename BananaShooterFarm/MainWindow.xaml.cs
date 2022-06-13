@@ -81,7 +81,7 @@ namespace BananaShooterFarm
                 NLogger.Log.Info($"----------Текущий аккаунт {account.SteamGuardAccount.AccountName}----------");
 
                 var currentAcc = accountStatses.FirstOrDefault(x => x.Account == account.SteamGuardAccount.AccountName);
-                currentAcc.Status = AccountStatus.Launch;
+                currentAcc.Status = AccountStatus.Launching;
 
                 var steamLogin = await SteamFunc.SandLogin(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
 
@@ -90,7 +90,7 @@ namespace BananaShooterFarm
                     var proc = await BSFunc.BSStart(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
 
                     currentAcc.PID = proc.Id;
-                    currentAcc.Status = AccountStatus.Ready;
+                    currentAcc.Status = AccountStatus.Launched;
                 }
                 else
                 {
@@ -118,6 +118,9 @@ namespace BananaShooterFarm
 
             //Проверяем работу аккаунтов
             await BSFunc.CheckingAndFixRunningAccounts(accountStatses);
+
+            //Настраиваем аккаунты
+            await BSFunc.SettingAccounts(accountStatses, master);
 
             updateNow = false;
 

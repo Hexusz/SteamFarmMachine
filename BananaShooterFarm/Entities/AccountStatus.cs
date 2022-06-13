@@ -3,7 +3,8 @@
     public enum AccountStatus
     {
         Wait,
-        Launch,
+        Launching,
+        Launched,
         Ready,
         Error
     }

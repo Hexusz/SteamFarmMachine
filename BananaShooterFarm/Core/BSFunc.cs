@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using BananaShooterFarm.Entities;
 using Newtonsoft.Json;
+using SteamLibrary;
 using SteamLibrary.Core;
 using SteamLibrary.Entities;
 
@@ -122,6 +125,110 @@ namespace BananaShooterFarm.Core
                 }
 
             }
+
+            return true;
+        }
+
+        public static async Task<bool> SettingAccounts(ObservableCollection<AccountStats> accStats, string master)
+        {
+            //Ищем мастер аккаунт
+            var masterAcc = accStats.FirstOrDefault(x => x.Account == master);
+
+            if(masterAcc.Status == AccountStatus.Launched)
+            {
+                await SettingMasterAccount(masterAcc.PID);
+                masterAcc.Status = AccountStatus.Ready;
+            }
+
+            //Настраиваем все не мастер аккаунты
+            foreach (var account in accStats)
+            {
+                if (account.Account == masterAcc.Account) { continue;}
+
+                if (account.Status == AccountStatus.Launched)
+                {
+                    await SettingStandardAccount(account.PID);
+                    account.Status = AccountStatus.Ready;
+                }
+            }
+
+            return true;
+        }
+
+        public static async Task<bool> SettingMasterAccount(int pid)
+        {
+            Process masterProcess = new Process();
+            var handler = IntPtr.Zero;
+
+            try
+            {
+                masterProcess = Process.GetProcessById(pid);
+            }
+            catch (Exception e)
+            {
+                NLogger.Log.Error("Не удалось получить процесс мастера");
+                return false;
+            }
+
+            handler = masterProcess.MainWindowHandle;
+
+            SteamUtils.SetForegroundWindow(handler);
+            var rect = new SteamUtils.Rect();
+            SteamUtils.GetWindowRect(handler, ref rect);
+            await Task.Delay(4000);
+            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 46));
+            SteamUtils.SetForegroundWindow(handler);
+            await Task.Delay(2000);
+            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 44));
+            SteamUtils.SetForegroundWindow(handler);
+            await Task.Delay(2000);
+            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2+33, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 48));
+            SteamUtils.SetForegroundWindow(handler);
+            await Task.Delay(1000);
+            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2 + 100, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 96));
+            SteamUtils.SetForegroundWindow(handler);
+            await Task.Delay(10000);
+            SteamUtils.SendEsc(handler,VirtualInputMethod.PostMessage);
+            await Task.Delay(3000);
+            SteamUtils.LeftMouseClickSlow(rect.Right - 40, rect.Top + 47);
+            await Task.Delay(1000);
+
+            return true;
+        }
+
+        public static async Task<bool> SettingStandardAccount(int pid)
+        {
+            Process accountProcess = new Process();
+            var handler = IntPtr.Zero;
+
+            try
+            {
+                accountProcess = Process.GetProcessById(pid);
+            }
+            catch (Exception e)
+            {
+                NLogger.Log.Error("Не удалось получить процесс мастера");
+                return false;
+            }
+
+            handler = accountProcess.MainWindowHandle;
+
+            SteamUtils.SetForegroundWindow(handler);
+            var rect = new SteamUtils.Rect();
+            SteamUtils.GetWindowRect(handler, ref rect);
+            await Task.Delay(4000);
+            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 46));
+            SteamUtils.SetForegroundWindow(handler);
+            await Task.Delay(2000);
+            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 48));
+            SteamUtils.SetForegroundWindow(handler);
+            await Task.Delay(2000);
+            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2 - 40, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 36));
+            SteamUtils.SetForegroundWindow(handler);
+            await Task.Delay(1000);
+            SteamUtils.SendCtrlhotKey('V');
+            await Task.Delay(1000);
+            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2 + 30, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 36));
 
             return true;
         }

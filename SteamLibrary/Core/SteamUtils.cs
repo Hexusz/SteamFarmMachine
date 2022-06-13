@@ -13,7 +13,7 @@ namespace SteamLibrary
     public class SteamUtils
     {
         [System.Runtime.InteropServices.DllImport("user32.dll")]
-        static extern bool SetCursorPos(int x, int y);
+        public static extern bool SetCursorPos(int x, int y);
 
         [DllImport("user32.dll")]
         public static extern bool GetWindowRect(IntPtr hwnd, ref Rect rectangle);
@@ -70,6 +70,7 @@ namespace SteamLibrary
         public const int WM_KEYUP = 0x0101;
         public const int WM_CHAR = 0x0102;
         public const int VK_RETURN = 0x0D;
+        public const int VK_ESCAPE = 0x1B;
         public const int VK_TAB = 0x09;
         public const int VK_SPACE = 0x20;
         public const int MOUSEEVENTF_LEFTDOWN = 0x02;
@@ -168,6 +169,22 @@ namespace SteamLibrary
             }
         }
 
+        public static void SendEsc(IntPtr hwnd, VirtualInputMethod inputMethod)
+        {
+            switch (inputMethod)
+            {
+                case VirtualInputMethod.SendMessage:
+                    SendMessage(hwnd, WM_KEYDOWN, VK_ESCAPE, IntPtr.Zero);
+                    SendMessage(hwnd, WM_KEYUP, VK_ESCAPE, IntPtr.Zero);
+                    break;
+
+                case VirtualInputMethod.PostMessage:
+                    PostMessage(hwnd, WM_KEYDOWN, (IntPtr)VK_ESCAPE, IntPtr.Zero);
+                    PostMessage(hwnd, WM_KEYUP, (IntPtr)VK_ESCAPE, IntPtr.Zero);
+                    break;
+            }
+        }
+
         private static Point GetCursorPosition()
         {
             GetCursorPos(out var lpPoint);
@@ -188,6 +205,24 @@ namespace SteamLibrary
             mouse_event(MOUSEEVENTF_LEFTUP, xPos, yPos, 0, 0);
             Thread.Sleep(50);
             SetCursorPos(mousePos.X, mousePos.Y);
+        }
+
+        public static void LeftMouseClickSlow(int xPos, int yPos)
+        {
+            SetCursorPos(xPos, yPos);
+            Thread.Sleep(500);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, xPos, yPos, 0, 0);
+            Thread.Sleep(100);
+            mouse_event(MOUSEEVENTF_LEFTUP, xPos, yPos, 0, 0);
+            Thread.Sleep(500);
+        }
+
+        public static void SendCtrlhotKey(char key)
+        {
+            keybd_event(0x11, 0, 0, 0);
+            keybd_event((byte)key, 0, 0, 0);
+            keybd_event((byte)key, 0, 0x2, 0);
+            keybd_event(0x11, 0, 0x2, 0);
         }
 
         public static void CloseWindow(IntPtr handle)
