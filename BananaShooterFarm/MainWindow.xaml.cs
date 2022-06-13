@@ -111,7 +111,7 @@ namespace BananaShooterFarm
             timerCheckItems.Elapsed += CheckItemsTimer;
             timerCheckItems.Start();
 
-            timerCheckAccounts = new Timer { Interval = 2000 };
+            timerCheckAccounts = new Timer { Interval = 5000 };
             timerCheckAccounts.Elapsed += WatchingAccountsTimer;
             timerCheckAccounts.Start();
         }

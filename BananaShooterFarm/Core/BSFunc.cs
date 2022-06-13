@@ -41,14 +41,19 @@ namespace BananaShooterFarm.Core
 
                 await Task.Delay(2000);
 
-                Process[] processlist = Process.GetProcesses();
-                foreach (Process process in processlist)
+                for (int i = 0; i < 5; i++)
                 {
-                    if (process.MainWindowTitle.Contains(account.SteamGuardAccount.AccountName) && process.MainWindowTitle.Contains("Banana Shooter"))
+                    Process[] processlist = Process.GetProcesses();
+                    foreach (Process process in processlist)
                     {
-                        return process;
+                        if (process.MainWindowTitle.Contains(account.SteamGuardAccount.AccountName) && process.MainWindowTitle.Contains("Banana Shooter"))
+                        {
+                            return process;
+                        }
                     }
+                    await Task.Delay(2000);
                 }
+                
 
                 NLogger.Log.Info("Не нашли процесс Banana Shooter для аккаунта " + account.SteamGuardAccount.AccountName);
 
@@ -187,6 +192,8 @@ namespace BananaShooterFarm.Core
 
                 var playStatus = await CheckPlayStatus(account.PID);
 
+                SteamUtils.SetForegroundWindow(handler);
+
                 switch (playStatus)
                 {
                     case PlayStatus.PlayGame:
@@ -194,12 +201,17 @@ namespace BananaShooterFarm.Core
                         await Task.Delay(3000);
                         continue;
 
-                    case PlayStatus.Pause:
+                    case PlayStatus.PauseInGame:
                         SteamUtils.SetForegroundWindow(handler);
-                        await Task.Delay(500);
+                        await Task.Delay(1000);
                         SteamUtils.SendEsc(handler, VirtualInputMethod.PostMessage);
-                        await Task.Delay(500);
+                        await Task.Delay(1000);
                         playStatus = await CheckPlayStatus(account.PID);
+
+                        if (playStatus == PlayStatus.PlayGame)
+                        {
+                            goto case PlayStatus.PlayGame;
+                        }
 
                         if (playStatus == PlayStatus.ReadyToPlay)
                         {
@@ -240,9 +252,9 @@ namespace BananaShooterFarm.Core
                             goto case PlayStatus.ReadyToPlay;
                         }
 
-                        if (playStatus == PlayStatus.Pause)
+                        if (playStatus == PlayStatus.PauseInGame)
                         {
-                            goto case PlayStatus.Pause;
+                            goto case PlayStatus.PauseInGame;
                         }
 
                         if (playStatus == PlayStatus.NotReady)
@@ -281,7 +293,7 @@ namespace BananaShooterFarm.Core
 
 
             SteamUtils.SetForegroundWindow(handler);
-            await Task.Delay(200);
+            await Task.Delay(2000);
             var rect = new SteamUtils.Rect();
             SteamUtils.GetWindowRect(handler, ref rect);
             await Task.Delay(1000);
@@ -293,7 +305,7 @@ namespace BananaShooterFarm.Core
             {
                 var pixelColor = SteamUtils.GetPixelColor(rect.Right - 40 - i, rect.Top + 47);
 
-                if (pixelColor == Color.FromArgb(255, 245, 233, 0))
+                if (pixelColor == Color.FromArgb(255, 255, 242, 0))
                 {
                     yellowFinded = true;
                 }
@@ -305,7 +317,7 @@ namespace BananaShooterFarm.Core
 
             if (yellowFinded && blueFinded)
             {
-                return PlayStatus.Pause;
+                return PlayStatus.PauseInGame;
             }
 
             for (int i = 0; i < 20; i++)
@@ -366,9 +378,9 @@ namespace BananaShooterFarm.Core
             SteamUtils.SendEsc(handler, VirtualInputMethod.PostMessage);
             await Task.Delay(2000);
             SteamUtils.LeftMouseClickSlow(rect.Right - 40, rect.Top + 47);
-            await Task.Delay(500);
+            await Task.Delay(1000);
             SteamUtils.SendEsc(handler, VirtualInputMethod.PostMessage);
-            await Task.Delay(500);
+            await Task.Delay(1000);
 
             return true;
         }

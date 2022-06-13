@@ -4,7 +4,7 @@
     {
         ReadyToPlay,
         NotReady,
-        Pause,
+        PauseInGame,
         PlayGame,
         None,
         Error
