@@ -184,6 +184,15 @@ namespace SteamLibrary.Core
                 }
             }
 
+            if(tryCount>0)
+            {
+                SteamUtils.Rect rect = new SteamUtils.Rect();
+
+                SteamUtils.GetWindowRect(Process.GetCurrentProcess().MainWindowHandle, ref rect);
+                SteamUtils.LeftMouseClick(rect.Left + 50, rect.Top + 10);
+                SteamUtils.SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
+            }
+
             Process steamGuardProcess = SteamUtils.WaitForSteamProcess(steamGuardWindow);
             steamGuardProcess.WaitForInputIdle();
 
