@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using SteamLibrary;
 using SteamLibrary.Core;
 using SteamLibrary.Entities;
+using Win32Interop.WinHandles;
 
 namespace BananaShooterFarm.Core
 {
@@ -24,6 +25,8 @@ namespace BananaShooterFarm.Core
         public static AppConfig AppConfig;
         public static Dictionary<string, int> accItems = new Dictionary<string, int>();
         public static ObservableCollection<AccountStats> accountStatses = new ObservableCollection<AccountStats>();
+
+        public static int NoneCount { get; set; }
 
         public static async Task<Process> BSStart(Account account, string sandSteamPath, string sandPath)
         {
@@ -71,12 +74,33 @@ namespace BananaShooterFarm.Core
             }
         }
 
-        public static void RefreshPIDs(ObservableCollection<AccountStats> accountStatses)
+        public static void RefreshPIDs()
         {
             foreach (var account in accountStatses)
             {
                 account.PID = GetAccountPID(account);
             }
+        }
+
+        public static async Task RefreshAllAccount()
+        {
+            RefreshPIDs();
+
+            foreach (var accountStatse in accountStatses)
+            {
+                await Task.Delay(5000);
+                try
+                {
+                    Process.GetProcessById(accountStatse.PID).Kill();
+                    accountStatse.Status = AccountStatus.Wait;
+                }
+                catch (Exception e)
+                {
+                    NLogger.Log.Error("Ошибка закрытия процесса");
+                }
+            }
+
+            await Task.Delay(10000);
         }
 
         public static int GetAccountPID(AccountStats account)
@@ -95,20 +119,11 @@ namespace BananaShooterFarm.Core
             return accProc;
         }
 
-        public static int GetSteamPID(AccountStats account)
+        public static WindowHandle GetSteamPID(AccountStats account)
         {
-            var accProc = -1;
-            var processlist = Process.GetProcesses();
-            foreach (Process process in processlist)
-            {
-                if (process.MainWindowTitle.Contains(account.Account) &&
-                    process.MainWindowTitle.Contains("Steam"))
-                {
-                    accProc = process.Id;
-                }
-            }
-
-            return accProc;
+            return TopLevelWindowUtils.FindWindow(wh =>
+                wh.GetClassName().Contains(account.Account) &&
+                wh.GetWindowText().Contains("Steam"));
         }
 
         public static async Task<AppConfig> LoadConfig()
@@ -170,8 +185,6 @@ namespace BananaShooterFarm.Core
 
             if (masterAcc.Status == AccountStatus.Launched)
             {
-                SteamUtils.ReturnFocus();
-
                 await SettingMasterAccount(masterAcc.PID);
 
                 lock (masterAcc)
@@ -183,8 +196,6 @@ namespace BananaShooterFarm.Core
             //Настраиваем все не мастер аккаунты
             foreach (var account in accStats)
             {
-                SteamUtils.ReturnFocus();
-
                 if (account.Account == masterAcc.Account) { continue; }
 
                 if (account.Status == AccountStatus.Launched)
@@ -207,7 +218,6 @@ namespace BananaShooterFarm.Core
 
             foreach (var account in accStats)
             {
-                SteamUtils.ReturnFocus();
                 await Task.Delay(1000);
 
                 Process accountProcess = new Process();
@@ -229,9 +239,14 @@ namespace BananaShooterFarm.Core
 
                 SteamUtils.SetForegroundWindow(handler);
 
+                await Task.Delay(2000);
+
+                //SteamUtils.ReturnFocus(handler);
+
                 switch (playStatus)
                 {
                     case PlayStatus.PlayGame:
+                        BSFunc.NoneCount = 0;
                         account.Status = AccountStatus.PlayGame;
                         await Task.Delay(3000);
                         continue;
@@ -279,7 +294,9 @@ namespace BananaShooterFarm.Core
                         break;
 
                     case PlayStatus.None:
+                        MessageBox.Show("asdasd");
                         await Task.Delay(10000);
+                        BSFunc.NoneCount++;
                         SteamUtils.SetForegroundWindow(handler);
                         await Task.Delay(500);
                         playStatus = await CheckPlayStatus(account.PID);
@@ -381,47 +398,57 @@ namespace BananaShooterFarm.Core
 
         public static async Task<bool> SettingMasterAccount(int pid)
         {
+            await Task.Delay(10000);
+
             Process masterProcess = new Process();
             var handler = IntPtr.Zero;
 
             try
             {
                 masterProcess = Process.GetProcessById(pid);
+
+                if (!masterProcess.Responding)
+                {
+                    await Task.Delay(10000);
+                }
+
+                handler = masterProcess.MainWindowHandle;
+
+                SteamUtils.SetForegroundWindow(handler);
+                await Task.Delay(2000);
+                //SteamUtils.ReturnFocus(handler);
+                await Task.Delay(2000);
+                var rect = new SteamUtils.Rect();
+                SteamUtils.GetWindowRect(handler, ref rect);
+                await Task.Delay(2000);
+                SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.1), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 20));
+                SteamUtils.SetForegroundWindow(handler);
+                await Task.Delay(2000);
+                SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.37),
+                    (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 43));
+                SteamUtils.SetForegroundWindow(handler);
+                await Task.Delay(2000);
+                SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.14),
+                    (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 95));
+                SteamUtils.SetForegroundWindow(handler);
+                await Task.Delay(2000);
+                SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2 + 100, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 96));
+                SteamUtils.SetForegroundWindow(handler);
+                await Task.Delay(7000);
+                SteamUtils.SendEsc(handler, VirtualInputMethod.SendMessage);
+                await Task.Delay(2000);
+                SteamUtils.LeftMouseClickSlow(rect.Right - 40, rect.Top + 47);
+                await Task.Delay(2000);
+                SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 2), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 46));
+                await Task.Delay(2000);
+
+                return true;
             }
             catch (Exception e)
             {
                 NLogger.Log.Error("Не удалось получить процесс мастера");
                 return false;
             }
-
-            handler = masterProcess.MainWindowHandle;
-
-            SteamUtils.SetForegroundWindow(handler);
-            var rect = new SteamUtils.Rect();
-            SteamUtils.GetWindowRect(handler, ref rect);
-            await Task.Delay(2000);
-            SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.1), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 20));
-            SteamUtils.SetForegroundWindow(handler);
-            await Task.Delay(1000);
-            SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.37),
-                (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 43));
-            SteamUtils.SetForegroundWindow(handler);
-            await Task.Delay(1000);
-            SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.14),
-                (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 95));
-            SteamUtils.SetForegroundWindow(handler);
-            await Task.Delay(1000);
-            SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2 + 100, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 96));
-            SteamUtils.SetForegroundWindow(handler);
-            await Task.Delay(7000);
-            SteamUtils.SendEsc(handler, VirtualInputMethod.SendMessage);
-            await Task.Delay(2000);
-            SteamUtils.LeftMouseClickSlow(rect.Right - 40, rect.Top + 47);
-            await Task.Delay(1000);
-            SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 2), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 46));
-            await Task.Delay(1000);
-
-            return true;
         }
 
         public static async Task<bool> SettingStandardAccount(int pid)
@@ -442,19 +469,22 @@ namespace BananaShooterFarm.Core
             handler = accountProcess.MainWindowHandle;
 
             SteamUtils.SetForegroundWindow(handler);
+            await Task.Delay(2000);
+            //SteamUtils.ReturnFocus(handler);
+            await Task.Delay(2000);
             var rect = new SteamUtils.Rect();
             SteamUtils.GetWindowRect(handler, ref rect);
             await Task.Delay(3000);
             SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.3), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 20));
             SteamUtils.SetForegroundWindow(handler);
-            await Task.Delay(1000);
+            await Task.Delay(3000);
             SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 7), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 9));
             SteamUtils.SetForegroundWindow(handler);
-            await Task.Delay(500);
+            await Task.Delay(2000);
             SteamUtils.SendCtrlhotKey('V');
-            await Task.Delay(500);
+            await Task.Delay(2000);
             SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 20), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 9));
-            await Task.Delay(500);
+            await Task.Delay(2000);
 
             return true;
         }
@@ -474,13 +504,14 @@ namespace BananaShooterFarm.Core
 
                 await Task.Delay(1000);
 
-                if (GetSteamPID(currentAcc) == -1)
+                if (!GetSteamPID(currentAcc).IsValid)
                 {
                     var steamLogin = await SteamFunc.SandLogin(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
 
                     if (steamLogin)
                     {
                         var proc = await BSStart(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
+                        await Task.Delay(5000);
 
                         currentAcc.PID = proc.Id;
                         currentAcc.Status = AccountStatus.Launched;

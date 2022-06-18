@@ -74,8 +74,6 @@ namespace BananaShooterFarm
                 return;
             }
 
-            await Task.Delay(5000);
-
             timerCheckItems = new Timer { Interval = 31000 };
             timerCheckItems.Elapsed += CheckItemsTimer;
             timerCheckItems.Start();
@@ -90,9 +88,17 @@ namespace BananaShooterFarm
             if (updateNow) { return; }
 
             updateNow = true;
+            if (BSFunc.NoneCount > 10)
+            {
+               await BSFunc.RefreshAllAccount();
+            }
+
+            await Task.Delay(1000);
+            SteamUtils.ReturnFocus(Process.GetCurrentProcess().MainWindowHandle);
+            await Task.Delay(1000);
 
             //Обновляем все PID
-            BSFunc.RefreshPIDs(BSFunc.accountStatses);
+            BSFunc.RefreshPIDs();
 
             //Проверяем работу аккаунтов и чиним не рабочие
             await BSFunc.CheckingAndFixRunningAccounts(BSFunc.accountStatses);

@@ -186,7 +186,7 @@ namespace SteamLibrary.Core
 
             if(tryCount>0)
             {
-                SteamUtils.ReturnFocus();
+                SteamUtils.ReturnFocus(Process.GetCurrentProcess().MainWindowHandle);
             }
 
             Process steamGuardProcess = SteamUtils.WaitForSteamProcess(steamGuardWindow);
