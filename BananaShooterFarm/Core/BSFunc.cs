@@ -294,7 +294,6 @@ namespace BananaShooterFarm.Core
                         break;
 
                     case PlayStatus.None:
-                        MessageBox.Show("asdasd");
                         await Task.Delay(10000);
                         BSFunc.NoneCount++;
                         SteamUtils.SetForegroundWindow(handler);
