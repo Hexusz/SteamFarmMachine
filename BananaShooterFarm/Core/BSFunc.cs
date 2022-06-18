@@ -20,6 +20,11 @@ namespace BananaShooterFarm.Core
 {
     public class BSFunc
     {
+        public static List<Account> Accounts { get; set; }
+        public static AppConfig AppConfig;
+        public static Dictionary<string, int> accItems = new Dictionary<string, int>();
+        public static ObservableCollection<AccountStats> accountStatses = new ObservableCollection<AccountStats>();
+
         public static async Task<Process> BSStart(Account account, string sandSteamPath, string sandPath)
         {
             StringBuilder parametersBuilder = new StringBuilder();
@@ -53,7 +58,7 @@ namespace BananaShooterFarm.Core
                     }
                     await Task.Delay(2000);
                 }
-                
+
 
                 NLogger.Log.Info("Не нашли процесс Banana Shooter для аккаунта " + account.SteamGuardAccount.AccountName);
 
@@ -70,19 +75,40 @@ namespace BananaShooterFarm.Core
         {
             foreach (var account in accountStatses)
             {
-                var accProc = -1;
-                var processlist = Process.GetProcesses();
-                foreach (Process process in processlist)
-                {
-                    if (process.MainWindowTitle.Contains(account.Account) &&
-                        process.MainWindowTitle.Contains("Banana Shooter"))
-                    {
-                        accProc = process.Id;
-                    }
-                }
-
-                account.PID = accProc;
+                account.PID = GetAccountPID(account);
             }
+        }
+
+        public static int GetAccountPID(AccountStats account)
+        {
+            var accProc = -1;
+            var processlist = Process.GetProcesses();
+            foreach (Process process in processlist)
+            {
+                if (process.MainWindowTitle.Contains(account.Account) &&
+                    process.MainWindowTitle.Contains("Banana Shooter"))
+                {
+                    accProc = process.Id;
+                }
+            }
+
+            return accProc;
+        }
+
+        public static int GetSteamPID(AccountStats account)
+        {
+            var accProc = -1;
+            var processlist = Process.GetProcesses();
+            foreach (Process process in processlist)
+            {
+                if (process.MainWindowTitle.Contains(account.Account) &&
+                    process.MainWindowTitle.Contains("Steam"))
+                {
+                    accProc = process.Id;
+                }
+            }
+
+            return accProc;
         }
 
         public static async Task<AppConfig> LoadConfig()
@@ -122,12 +148,12 @@ namespace BananaShooterFarm.Core
                     if (!(process.MainWindowTitle.Contains(account.Account) &&
                           process.MainWindowTitle.Contains("Banana Shooter")))
                     {
-                        MessageBox.Show("run " + account.Account);
+                        throw new Exception("PID аккаунта не верный");
                     }
                 }
                 catch (Exception e)
                 {
-                    MessageBox.Show("error " + account.Account);
+                    await LaunchGame(Accounts.First(x => x.SteamGuardAccount.AccountName == account.Account));
                 }
 
             }
@@ -421,6 +447,48 @@ namespace BananaShooterFarm.Core
             await Task.Delay(500);
 
             return true;
+        }
+
+        public static async Task LaunchGame(Account account)
+        {
+            if (!accItems.ContainsKey(account.SteamGuardAccount.AccountName))
+                accItems.Add(account.SteamGuardAccount.AccountName, SteamFunc.GetItemsCount(account.SteamGuardAccount.Session.SteamID.ToString(), "1949740", "2"));
+
+            var currentAcc = accountStatses.FirstOrDefault(x => x.Account == account.SteamGuardAccount.AccountName);
+
+            if (GetAccountPID(currentAcc) == -1)
+            {
+                currentAcc.Status = AccountStatus.Launching;
+
+                if (GetSteamPID(currentAcc) == -1)
+                {
+                    var steamLogin = await SteamFunc.SandLogin(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
+
+                    if (steamLogin)
+                    {
+                        var proc = await BSStart(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
+
+                        currentAcc.PID = proc.Id;
+                        currentAcc.Status = AccountStatus.Launched;
+                    }
+                    else
+                    {
+                        currentAcc.Status = AccountStatus.Error;
+                    }
+                }
+                else
+                {
+                    var proc = await BSStart(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
+
+                    currentAcc.PID = proc.Id;
+                    currentAcc.Status = AccountStatus.Launched;
+                }
+            }
+            else
+            {
+                currentAcc.PID = GetAccountPID(currentAcc);
+                currentAcc.Status = AccountStatus.Launched;
+            }
         }
     }
 }

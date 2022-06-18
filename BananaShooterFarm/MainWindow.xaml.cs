@@ -34,22 +34,18 @@ namespace BananaShooterFarm
         private static bool updateNow;
         private static string master = "";
 
-        Dictionary<string, int> accItems = new Dictionary<string, int>();
-        private static List<Account> Accounts { get; set; }
-        private static AppConfig AppConfig { get; set; }
-        private ObservableCollection<AccountStats> accountStatses = new ObservableCollection<AccountStats>();
-
+        
         public MainWindow()
         {
             InitializeComponent();
             NLogger.Log.Info("Запуск приложения");
             AppFunc.LoadCryptKey();
-            Accounts = AppFunc.LoadAccounts().Result.OrderBy(x => x.SteamGuardAccount.AccountName).ToList();
-            AppConfig = BSFunc.LoadConfig().Result;
+            BSFunc.Accounts = AppFunc.LoadAccounts().Result.OrderBy(x => x.SteamGuardAccount.AccountName).ToList();
+            BSFunc.AppConfig = BSFunc.LoadConfig().Result;
 
-            foreach (var account in Accounts)
+            foreach (var account in BSFunc.Accounts)
             {
-                accountStatses.Add(new AccountStats() { Account = account.SteamGuardAccount.AccountName, Items = 0, Status = AccountStatus.Wait, PID = -1 });
+               BSFunc.accountStatses.Add(new AccountStats() { Account = account.SteamGuardAccount.AccountName, Items = 0, Status = AccountStatus.Wait, PID = -1 });
 
                 MenuItem masterItem = new MenuItem();
                 masterItem.Header = account.SteamGuardAccount.AccountName;
@@ -57,7 +53,7 @@ namespace BananaShooterFarm
                 masterItem.AddHandler(MenuItem.ClickEvent, new RoutedEventHandler(SetMaster));
             }
 
-            ListViewAccounts.ItemsSource = accountStatses;
+            ListViewAccounts.ItemsSource = BSFunc.accountStatses;
             LoginAccountsItem.IsEnabled = false;
         }
 
@@ -72,38 +68,10 @@ namespace BananaShooterFarm
         private async Task LoginAccounts()
         {
             //Проверка наличия аккаунтов в песочнице
-            if (!SteamFunc.CheckSandIni(Accounts))
+            if (!SteamFunc.CheckSandIni(BSFunc.Accounts))
             {
-                MessageBox.Show("Sand not configured");
+                MessageBox.Show("Sand not configured, check log");
                 return;
-            }
-
-            int index = 0;
-
-            foreach (var account in Accounts)
-            {
-                NLogger.Log.Info($"----------Текущий аккаунт {account.SteamGuardAccount.AccountName}----------");
-
-                accItems.Add(account.SteamGuardAccount.AccountName, SteamFunc.GetItemsCount(account.SteamGuardAccount.Session.SteamID.ToString(), "1949740", "2"));
-
-                var currentAcc = accountStatses.FirstOrDefault(x => x.Account == account.SteamGuardAccount.AccountName);
-                currentAcc.Status = AccountStatus.Launching;
-
-                var steamLogin = await SteamFunc.SandLogin(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
-
-                if (steamLogin)
-                {
-                    var proc = await BSFunc.BSStart(account, AppConfig.SteamPath, AppConfig.SandBoxiePath);
-
-                    currentAcc.PID = proc.Id;
-                    currentAcc.Status = AccountStatus.Launched;
-                }
-                else
-                {
-                    currentAcc.Status = AccountStatus.Error;
-                }
-
-                index++;
             }
 
             await Task.Delay(5000);
@@ -130,16 +98,16 @@ namespace BananaShooterFarm
             SteamUtils.SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
 
             //Обновляем все PID
-            BSFunc.RefreshPIDs(accountStatses);
+            BSFunc.RefreshPIDs(BSFunc.accountStatses);
 
             //Проверяем работу аккаунтов и чиним не рабочие
-            await BSFunc.CheckingAndFixRunningAccounts(accountStatses);
+            await BSFunc.CheckingAndFixRunningAccounts(BSFunc.accountStatses);
 
             //Настраиваем аккаунты
-            await BSFunc.SettingAccounts(accountStatses, master);
+            await BSFunc.SettingAccounts(BSFunc.accountStatses, master);
 
             //Проверяем состояние аккаунта
-            await BSFunc.CheckStateAccounts(accountStatses, master);
+            await BSFunc.CheckStateAccounts(BSFunc.accountStatses, master);
 
             updateNow = false;
 
@@ -149,19 +117,19 @@ namespace BananaShooterFarm
         {
             try
             {
-                var currentAccount = Accounts[currentCheckItems].SteamGuardAccount;
+                var currentAccount = BSFunc.Accounts[currentCheckItems].SteamGuardAccount;
 
-                var oldAccItems = accItems
+                var oldAccItems = BSFunc.accItems
                     .FirstOrDefault(x => x.Key == currentAccount.AccountName).Value;
 
                 var currentAccountItems =
                     SteamFunc.GetItemsCount(currentAccount.Session.SteamID.ToString(), "1949740", "2");
 
-                var difference =  currentAccountItems - oldAccItems;
+                var difference = currentAccountItems - oldAccItems;
 
                 if (difference != 0)
                 {
-                    accountStatses.FirstOrDefault(x => x.Account == currentAccount.AccountName).Items = difference;
+                    BSFunc.accountStatses.FirstOrDefault(x => x.Account == currentAccount.AccountName).Items = difference;
                 }
 
             }
@@ -170,7 +138,7 @@ namespace BananaShooterFarm
                 NLogger.Log.Error("Ошибка получения списка предметов " + exception);
             }
 
-            if (currentCheckItems < Accounts.Count - 1)
+            if (currentCheckItems < BSFunc.Accounts.Count - 1)
             {
                 currentCheckItems++;
             }
