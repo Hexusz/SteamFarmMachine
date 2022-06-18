@@ -91,12 +91,6 @@ namespace BananaShooterFarm
 
             updateNow = true;
 
-            SteamUtils.Rect rect = new SteamUtils.Rect();
-
-            SteamUtils.GetWindowRect(Process.GetCurrentProcess().MainWindowHandle, ref rect);
-            SteamUtils.LeftMouseClick(rect.Left + 50, rect.Top + 10);
-            SteamUtils.SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
-
             //Обновляем все PID
             BSFunc.RefreshPIDs(BSFunc.accountStatses);
 

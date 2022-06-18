@@ -117,6 +117,15 @@ namespace SteamLibrary
                  wh.GetWindowText().StartsWith("Steam — ")));
         }
 
+        public static void ReturnFocus()
+        {
+            Rect rect = new SteamUtils.Rect();
+
+            GetWindowRect(Process.GetCurrentProcess().MainWindowHandle, ref rect);
+            LeftMouseClickSlow(rect.Left + 50, rect.Top + 10);
+            SetForegroundWindow(Process.GetCurrentProcess().MainWindowHandle);
+        }
+
         public static Process WaitForSteamProcess(WindowHandle windowHandle)
         {
             Process process = null;
@@ -235,11 +244,11 @@ namespace SteamLibrary
         public static void LeftMouseClickSlow(int xPos, int yPos)
         {
             SetCursorPos(xPos, yPos);
-            Thread.Sleep(500);
+            Thread.Sleep(300);
             mouse_event(MOUSEEVENTF_LEFTDOWN, xPos, yPos, 0, 0);
             Thread.Sleep(100);
             mouse_event(MOUSEEVENTF_LEFTUP, xPos, yPos, 0, 0);
-            Thread.Sleep(500);
+            Thread.Sleep(300);
         }
 
         public static void SendCtrlhotKey(char key)
