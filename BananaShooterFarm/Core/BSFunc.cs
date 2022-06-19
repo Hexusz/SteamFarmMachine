@@ -246,8 +246,11 @@ namespace BananaShooterFarm.Core
                 switch (playStatus)
                 {
                     case PlayStatus.PlayGame:
-                        BSFunc.NoneCount = 0;
                         account.Status = AccountStatus.PlayGame;
+                        var rect2 = new SteamUtils.Rect();
+                        SteamUtils.GetWindowRect(handler, ref rect2);
+                        await Task.Delay(1000);
+                        SteamUtils.LeftMouseClickSlow((int)(rect2.Right - Math.Abs(rect2.Left - rect2.Right) / 2), (int)(rect2.Top + Math.Abs(rect2.Bottom - rect2.Top) / 100 * 46));
                         await Task.Delay(3000);
                         continue;
 
@@ -317,7 +320,7 @@ namespace BananaShooterFarm.Core
                         break;
 
                     case PlayStatus.Error:
-
+                        account.Status = AccountStatus.Error;
                         break;
                 }
 

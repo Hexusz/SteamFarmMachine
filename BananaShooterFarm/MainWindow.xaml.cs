@@ -88,9 +88,10 @@ namespace BananaShooterFarm
             if (updateNow) { return; }
 
             updateNow = true;
-            if (BSFunc.NoneCount > 10)
+            if (BSFunc.NoneCount > 20)
             {
                await BSFunc.RefreshAllAccount();
+               NLogger.Log.Warn("RefreshAllAccount");
             }
 
             await Task.Delay(1000);
