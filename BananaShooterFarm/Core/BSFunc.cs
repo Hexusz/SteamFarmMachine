@@ -187,10 +187,7 @@ namespace BananaShooterFarm.Core
             {
                 await SettingMasterAccount(masterAcc.PID);
 
-                lock (masterAcc)
-                {
-                    masterAcc.Status = AccountStatus.InGame;
-                }
+                masterAcc.Status = AccountStatus.InGame;
             }
 
             //Настраиваем все не мастер аккаунты
@@ -202,12 +199,11 @@ namespace BananaShooterFarm.Core
                 {
                     await SettingStandardAccount(account.PID);
 
-                    lock (account)
-                    {
-                        account.Status = AccountStatus.InGame;
-                    }
+                    account.Status = AccountStatus.InGame;
                 }
             }
+
+            await Task.Delay(5000);
 
             return true;
         }
@@ -224,22 +220,21 @@ namespace BananaShooterFarm.Core
                     last.LastStatus = account.Status;
                 }
 
-                if (DateTime.Now - account.LastStatusChange > TimeSpan.FromMinutes(7))
+                if (DateTime.Now - account.LastStatusChange > TimeSpan.FromMinutes(10))
                 {
                     NLogger.Log.Warn($"Статус аккаунта {account.Account} завис, перезагружаем аккаунты");
                     await RefreshAllAccount();
+                    return;
                 }
-
             }
         }
 
         public static async Task<bool> CheckStateAccounts(ObservableCollection<AccountStats> accStats, string master)
         {
-            await Task.Delay(2000);
 
             foreach (var account in accStats)
             {
-                await Task.Delay(1000);
+                await Task.Delay(500);
 
                 Process accountProcess;
                 var handler = IntPtr.Zero;
@@ -260,9 +255,7 @@ namespace BananaShooterFarm.Core
 
                 SteamUtils.SetForegroundWindow(handler);
 
-                await Task.Delay(2000);
-
-                //SteamUtils.ReturnFocus(handler);
+                await Task.Delay(1000);
 
                 switch (playStatus)
                 {
@@ -270,16 +263,13 @@ namespace BananaShooterFarm.Core
                         account.Status = AccountStatus.PlayGame;
                         var rect2 = new SteamUtils.Rect();
                         SteamUtils.GetWindowRect(handler, ref rect2);
-                        await Task.Delay(1000);
                         SteamUtils.LeftMouseClickSlow((int)(rect2.Right - Math.Abs(rect2.Left - rect2.Right) / 2), (int)(rect2.Top + Math.Abs(rect2.Bottom - rect2.Top) / 100 * 46));
-                        await Task.Delay(3000);
+                        await Task.Delay(1000);
                         continue;
 
                     case PlayStatus.PauseInGame:
-                        SteamUtils.SetForegroundWindow(handler);
                         var rect = new SteamUtils.Rect();
                         SteamUtils.GetWindowRect(handler, ref rect);
-                        await Task.Delay(1000);
                         SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 2), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 46));
                         await Task.Delay(1000);
                         playStatus = await CheckPlayStatus(account.PID);
@@ -305,22 +295,17 @@ namespace BananaShooterFarm.Core
                         continue;
 
                     case PlayStatus.NotReady:
-                        SteamUtils.SetForegroundWindow(handler);
-                        await Task.Delay(500);
                         SteamUtils.SendE(handler, VirtualInputMethod.PostMessage);
-                        await Task.Delay(500);
                         playStatus = await CheckPlayStatus(account.PID);
+
                         if (playStatus == PlayStatus.ReadyToPlay)
                         {
-                            account.Status = AccountStatus.ReadyToPlay;
-                            continue;
+                            goto case PlayStatus.ReadyToPlay;
                         }
                         break;
 
                     case PlayStatus.None:
                         await Task.Delay(10000);
-                        SteamUtils.SetForegroundWindow(handler);
-                        await Task.Delay(500);
                         playStatus = await CheckPlayStatus(account.PID);
 
                         if (playStatus == PlayStatus.ReadyToPlay)
@@ -337,7 +322,6 @@ namespace BananaShooterFarm.Core
                         {
                             goto case PlayStatus.NotReady;
                         }
-
                         break;
 
                     case PlayStatus.Error:
@@ -345,9 +329,7 @@ namespace BananaShooterFarm.Core
                         break;
                 }
 
-
             }
-
             return true;
         }
 
@@ -370,10 +352,9 @@ namespace BananaShooterFarm.Core
 
 
             SteamUtils.SetForegroundWindow(handler);
-            await Task.Delay(2000);
+            await Task.Delay(1000);
             var rect = new SteamUtils.Rect();
             SteamUtils.GetWindowRect(handler, ref rect);
-            await Task.Delay(1000);
 
             var yellowFinded = false;
             var blueFinded = false;
