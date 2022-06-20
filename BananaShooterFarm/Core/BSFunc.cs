@@ -23,8 +23,8 @@ namespace BananaShooterFarm.Core
     {
         public static List<Account> Accounts { get; set; }
         public static AppConfig AppConfig;
-        public static Dictionary<string, int> accItems = new Dictionary<string, int>();
-        public static ObservableCollection<AccountStats> accountStatses = new ObservableCollection<AccountStats>();
+        public static Dictionary<string, int> AccItems = new Dictionary<string, int>();
+        public static ObservableCollection<AccountStats> AccountStatses = new ObservableCollection<AccountStats>();
 
         public static int NoneCount { get; set; }
 
@@ -76,7 +76,7 @@ namespace BananaShooterFarm.Core
 
         public static void RefreshPIDs()
         {
-            foreach (var account in accountStatses)
+            foreach (var account in AccountStatses)
             {
                 account.PID = GetAccountPID(account);
             }
@@ -86,7 +86,7 @@ namespace BananaShooterFarm.Core
         {
             RefreshPIDs();
 
-            foreach (var accountStatse in accountStatses)
+            foreach (var accountStatse in AccountStatses)
             {
                 await Task.Delay(5000);
                 try
@@ -208,6 +208,12 @@ namespace BananaShooterFarm.Core
                     }
                 }
             }
+
+            return true;
+        }
+
+        public static async Task<bool> CheckChangeStateAccounts(ObservableCollection<AccountStats> accStats)
+        {
 
             return true;
         }
@@ -498,10 +504,10 @@ namespace BananaShooterFarm.Core
 
         public static async Task LaunchGame(Account account)
         {
-            if (!accItems.ContainsKey(account.SteamGuardAccount.AccountName))
-                accItems.Add(account.SteamGuardAccount.AccountName, SteamFunc.GetItemsCount(account.SteamGuardAccount.Session.SteamID.ToString(), "1949740", "2"));
+            if (!AccItems.ContainsKey(account.SteamGuardAccount.AccountName))
+                AccItems.Add(account.SteamGuardAccount.AccountName, SteamFunc.GetItemsCount(account.SteamGuardAccount.Session.SteamID.ToString(), "1949740", "2"));
 
-            var currentAcc = accountStatses.FirstOrDefault(x => x.Account == account.SteamGuardAccount.AccountName);
+            var currentAcc = AccountStatses.FirstOrDefault(x => x.Account == account.SteamGuardAccount.AccountName);
 
             await Task.Delay(1000);
 

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace BananaShooterFarm.Entities
@@ -28,6 +29,13 @@ namespace BananaShooterFarm.Entities
         {
             get => pid;
             set { pid = value; NotifyPropertyChanged(); }
+        }
+
+        private DateTime lastStatusChange;
+        public DateTime LastStatusChange
+        {
+            get => lastStatusChange;
+            set { lastStatusChange = value; NotifyPropertyChanged(); }
         }
 
         private void NotifyPropertyChanged([CallerMemberName] string propertyName = null)

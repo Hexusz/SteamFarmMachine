@@ -34,7 +34,7 @@ namespace BananaShooterFarm
         private static bool updateNow;
         private static string master = "";
 
-        
+
         public MainWindow()
         {
             InitializeComponent();
@@ -45,7 +45,14 @@ namespace BananaShooterFarm
 
             foreach (var account in BSFunc.Accounts)
             {
-               BSFunc.accountStatses.Add(new AccountStats() { Account = account.SteamGuardAccount.AccountName, Items = 0, Status = AccountStatus.Wait, PID = -1 });
+                BSFunc.AccountStatses.Add(new AccountStats()
+                {
+                    Account = account.SteamGuardAccount.AccountName,
+                    Items = 0, 
+                    Status = AccountStatus.Wait, 
+                    PID = -1,
+                    LastStatusChange = DateTime.Now
+                });
 
                 MenuItem masterItem = new MenuItem();
                 masterItem.Header = account.SteamGuardAccount.AccountName;
@@ -53,7 +60,7 @@ namespace BananaShooterFarm
                 masterItem.AddHandler(MenuItem.ClickEvent, new RoutedEventHandler(SetMaster));
             }
 
-            ListViewAccounts.ItemsSource = BSFunc.accountStatses;
+            ListViewAccounts.ItemsSource = BSFunc.AccountStatses;
             LoginAccountsItem.IsEnabled = false;
         }
 
@@ -90,8 +97,8 @@ namespace BananaShooterFarm
             updateNow = true;
             if (BSFunc.NoneCount > 20)
             {
-               await BSFunc.RefreshAllAccount();
-               NLogger.Log.Warn("RefreshAllAccount");
+                await BSFunc.RefreshAllAccount();
+                NLogger.Log.Warn("RefreshAllAccount");
             }
 
             await Task.Delay(1000);
@@ -102,13 +109,16 @@ namespace BananaShooterFarm
             BSFunc.RefreshPIDs();
 
             //Проверяем работу аккаунтов и чиним не рабочие
-            await BSFunc.CheckingAndFixRunningAccounts(BSFunc.accountStatses);
+            await BSFunc.CheckingAndFixRunningAccounts(BSFunc.AccountStatses);
 
             //Настраиваем аккаунты
-            await BSFunc.SettingAccounts(BSFunc.accountStatses, master);
+            await BSFunc.SettingAccounts(BSFunc.AccountStatses, master);
 
             //Проверяем состояние аккаунта
-            await BSFunc.CheckStateAccounts(BSFunc.accountStatses, master);
+            await BSFunc.CheckStateAccounts(BSFunc.AccountStatses, master);
+
+            //Если статус аккаунта завис, то перезагружаем аккаунты
+            await BSFunc.CheckChangeStateAccounts(BSFunc.AccountStatses);
 
             updateNow = false;
 
@@ -120,7 +130,7 @@ namespace BananaShooterFarm
             {
                 var currentAccount = BSFunc.Accounts[currentCheckItems].SteamGuardAccount;
 
-                var oldAccItems = BSFunc.accItems
+                var oldAccItems = BSFunc.AccItems
                     .FirstOrDefault(x => x.Key == currentAccount.AccountName).Value;
 
                 var currentAccountItems =
@@ -130,7 +140,7 @@ namespace BananaShooterFarm
 
                 if (difference != 0)
                 {
-                    BSFunc.accountStatses.FirstOrDefault(x => x.Account == currentAccount.AccountName).Items = difference;
+                    BSFunc.AccountStatses.FirstOrDefault(x => x.Account == currentAccount.AccountName).Items = difference;
                 }
 
             }

@@ -24,6 +24,7 @@
                     <GridViewColumn Header="PID" DisplayMemberBinding="{Binding PID}" Width="70"/>
                     <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="100"/>
                     <GridViewColumn Header="Items" DisplayMemberBinding="{Binding Items}" Width="50"/>
+                    <GridViewColumn Header="Last status change" DisplayMemberBinding="{Binding LastStatusChange}" Width="150"/>
                 </GridView>
             </ListView.View>
         </ListView>
