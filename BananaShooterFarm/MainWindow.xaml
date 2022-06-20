@@ -14,7 +14,7 @@
                 <MenuItem Header="Master" Name="MenuItem">
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="Exit" ></MenuItem>
+                <MenuItem Header="Refresh All" Click="MenuItem_Click" ></MenuItem>
             </MenuItem>
         </Menu>
         <ListView Margin="0,25,0,0" Name="ListViewAccounts">

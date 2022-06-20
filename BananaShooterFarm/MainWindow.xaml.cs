@@ -158,5 +158,10 @@ namespace BananaShooterFarm
 
             master = (sender as MenuItem)?.Header.ToString();
         }
+
+        private async void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            await BSFunc.RefreshAllAccount();
+        }
     }
 }

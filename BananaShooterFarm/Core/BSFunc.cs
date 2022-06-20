@@ -298,7 +298,6 @@ namespace BananaShooterFarm.Core
 
                     case PlayStatus.None:
                         await Task.Delay(10000);
-                        BSFunc.NoneCount++;
                         SteamUtils.SetForegroundWindow(handler);
                         await Task.Delay(500);
                         playStatus = await CheckPlayStatus(account.PID);
@@ -317,6 +316,12 @@ namespace BananaShooterFarm.Core
                         {
                             goto case PlayStatus.NotReady;
                         }
+
+                        if (playStatus == PlayStatus.None)
+                        {
+                            BSFunc.NoneCount++;
+                        }
+
                         break;
 
                     case PlayStatus.Error:
