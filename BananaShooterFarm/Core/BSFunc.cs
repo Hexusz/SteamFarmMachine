@@ -24,9 +24,8 @@ namespace BananaShooterFarm.Core
         public static List<Account> Accounts { get; set; }
         public static AppConfig AppConfig;
         public static Dictionary<string, int> AccItems = new Dictionary<string, int>();
+        public static List<LastAccountStatus> LastAccountStatus = new List<LastAccountStatus>();
         public static ObservableCollection<AccountStats> AccountStatses = new ObservableCollection<AccountStats>();
-
-        public static int NoneCount { get; set; }
 
         public static async Task<Process> BSStart(Account account, string sandSteamPath, string sandPath)
         {
@@ -98,6 +97,7 @@ namespace BananaShooterFarm.Core
                 {
                     NLogger.Log.Error("Ошибка закрытия процесса");
                 }
+                accountStatse.LastStatusChange = DateTime.Now;
             }
 
             await Task.Delay(10000);
@@ -212,10 +212,25 @@ namespace BananaShooterFarm.Core
             return true;
         }
 
-        public static async Task<bool> CheckChangeStateAccounts(ObservableCollection<AccountStats> accStats)
+        public static async Task CheckChangeStateAccounts(ObservableCollection<AccountStats> accStats)
         {
+            foreach (var account in accStats)
+            {
+                var last = LastAccountStatus.First(x => x.Account == account.Account);
 
-            return true;
+                if (last.LastStatus != account.Status)
+                {
+                    account.LastStatusChange = DateTime.Now;
+                    last.LastStatus = account.Status;
+                }
+
+                if (DateTime.Now - account.LastStatusChange > TimeSpan.FromMinutes(7))
+                {
+                    NLogger.Log.Warn($"Статус аккаунта {account.Account} завис, перезагружаем аккаунты");
+                    await RefreshAllAccount();
+                }
+
+            }
         }
 
         public static async Task<bool> CheckStateAccounts(ObservableCollection<AccountStats> accStats, string master)
@@ -226,7 +241,7 @@ namespace BananaShooterFarm.Core
             {
                 await Task.Delay(1000);
 
-                Process accountProcess = new Process();
+                Process accountProcess;
                 var handler = IntPtr.Zero;
 
                 try
@@ -321,11 +336,6 @@ namespace BananaShooterFarm.Core
                         if (playStatus == PlayStatus.NotReady)
                         {
                             goto case PlayStatus.NotReady;
-                        }
-
-                        if (playStatus == PlayStatus.None)
-                        {
-                            BSFunc.NoneCount++;
                         }
 
                         break;
@@ -487,10 +497,10 @@ namespace BananaShooterFarm.Core
             await Task.Delay(2000);
             var rect = new SteamUtils.Rect();
             SteamUtils.GetWindowRect(handler, ref rect);
-            await Task.Delay(3000);
+            await Task.Delay(2000);
             SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.3), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 20));
             SteamUtils.SetForegroundWindow(handler);
-            await Task.Delay(3000);
+            await Task.Delay(2000);
             SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 7), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 9));
             SteamUtils.SetForegroundWindow(handler);
             await Task.Delay(2000);

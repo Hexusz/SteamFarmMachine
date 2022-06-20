@@ -48,10 +48,16 @@ namespace BananaShooterFarm
                 BSFunc.AccountStatses.Add(new AccountStats()
                 {
                     Account = account.SteamGuardAccount.AccountName,
-                    Items = 0, 
-                    Status = AccountStatus.Wait, 
+                    Items = 0,
+                    Status = AccountStatus.Wait,
                     PID = -1,
                     LastStatusChange = DateTime.Now
+                });
+
+                BSFunc.LastAccountStatus.Add(new LastAccountStatus()
+                {
+                    Account = account.SteamGuardAccount.AccountName,
+                    LastStatus = AccountStatus.Wait
                 });
 
                 MenuItem masterItem = new MenuItem();
@@ -95,11 +101,6 @@ namespace BananaShooterFarm
             if (updateNow) { return; }
 
             updateNow = true;
-            if (BSFunc.NoneCount > 20)
-            {
-                await BSFunc.RefreshAllAccount();
-                NLogger.Log.Warn("RefreshAllAccount");
-            }
 
             await Task.Delay(1000);
             SteamUtils.ReturnFocus(Process.GetCurrentProcess().MainWindowHandle);
