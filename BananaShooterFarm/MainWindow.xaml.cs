@@ -102,10 +102,6 @@ namespace BananaShooterFarm
 
             updateNow = true;
 
-            await Task.Delay(1000);
-            SteamUtils.ReturnFocus(Process.GetCurrentProcess().MainWindowHandle);
-            await Task.Delay(1000);
-
             //Обновляем все PID
             BSFunc.RefreshPIDs();
 
@@ -120,6 +116,10 @@ namespace BananaShooterFarm
 
             //Если статус аккаунта завис, то перезагружаем аккаунты
             await BSFunc.CheckChangeStateAccounts(BSFunc.AccountStatses);
+
+            await Task.Delay(1000);
+            SteamUtils.ReturnFocus(Process.GetCurrentProcess().MainWindowHandle);
+            await Task.Delay(1000);
 
             updateNow = false;
 

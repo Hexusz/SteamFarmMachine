@@ -219,7 +219,7 @@ namespace SteamLibrary
             }
         }
 
-        private static Point GetCursorPosition()
+        public static Point GetCursorPosition()
         {
             GetCursorPos(out var lpPoint);
             // NOTE: If you need error handling
