@@ -155,7 +155,9 @@ namespace BananaShooterFarm.Core
 
         public static async Task<bool> CheckingAndFixRunningAccounts(ObservableCollection<AccountStats> accStats)
         {
-            foreach (var account in accStats)
+            var r = new Random();
+
+            foreach (var account in accStats.OrderBy(x => r.Next()))
             {
                 try
                 {
@@ -214,7 +216,9 @@ namespace BananaShooterFarm.Core
             }
 
             //Настраиваем все не мастер аккаунты
-            foreach (var account in accStats)
+            var r = new Random();
+
+            foreach (var account in accStats.OrderBy(x => r.Next()))
             {
                 if (account.Account == masterAcc.Account) { continue; }
 
@@ -235,7 +239,9 @@ namespace BananaShooterFarm.Core
 
         public static async Task CheckChangeStateAccounts(ObservableCollection<AccountStats> accStats)
         {
-            foreach (var account in accStats)
+            var r = new Random();
+
+            foreach (var account in accStats.OrderBy(x => r.Next()))
             {
                 var last = LastAccountStatus.First(x => x.Account == account.Account);
 
@@ -256,8 +262,9 @@ namespace BananaShooterFarm.Core
 
         public static async Task<bool> CheckStateAccounts(ObservableCollection<AccountStats> accStats, string master)
         {
+            var r = new Random();
 
-            foreach (var account in accStats)
+            foreach (var account in accStats.OrderBy(x => r.Next()))
             {
                 if (CurrentServerId.Length < 1)
                 {
