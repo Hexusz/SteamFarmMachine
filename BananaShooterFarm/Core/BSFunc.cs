@@ -259,6 +259,12 @@ namespace BananaShooterFarm.Core
 
             foreach (var account in accStats)
             {
+                if (CurrentServerId.Length < 1)
+                {
+                    //Копируем id сервера после настройки мастер аккаунта
+                    CurrentServerId = await GetClipboardAsync();
+                }
+
                 await Task.Delay(500);
 
                 Process accountProcess;
@@ -274,16 +280,33 @@ namespace BananaShooterFarm.Core
                     return false;
                 }
 
-                handler = accountProcess.MainWindowHandle;
+                StringBuilder parametersBuilder = new StringBuilder();
 
-                var playStatus = await CheckPlayStatus(account.PID);
+                parametersBuilder.Append($"/box:{account.Account} steam://joinlobby/1949740/{CurrentServerId}");
+
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    UseShellExecute = true,
+                    FileName = Path.Combine(AppConfig.SandBoxiePath, "Start.exe"),
+                    WorkingDirectory = AppConfig.SandBoxiePath,
+                    Arguments = parametersBuilder.ToString()
+                };
+
+                try
+                {
+                    Process steamProcess = Process.Start(startInfo);
+                }
+                catch { NLogger.Log.Error($"Не удачная попытка входа на сервер для аккаунта {account.Account}"); }
+
+                handler = accountProcess.MainWindowHandle;
 
                 SteamUtils.SetForegroundWindow(handler);
 
-                await Task.Delay(1000);
+                SteamUtils.MoveWindow(handler, 350, 150, 816, 639, true);
 
-                //Копируем id сервера 
-                CurrentServerId = await GetClipboardAsync();
+                await Task.Delay(2000);
+
+                var playStatus = await CheckPlayStatus(account.PID);
 
                 switch (playStatus)
                 {
@@ -481,26 +504,28 @@ namespace BananaShooterFarm.Core
                     SteamUtils.GetWindowRect(handler, ref rect);
                 }
 
-                await Task.Delay(2000);
-                SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.1), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 20));
                 SteamUtils.SetForegroundWindow(handler);
+
+                SteamUtils.MoveWindow(handler, 350, 150, 800, 600, true);
+                SteamUtils.GetWindowRect(handler, ref rect);
+
                 await Task.Delay(2000);
-                SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.37),
-                    (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 43));
-                SteamUtils.SetForegroundWindow(handler);
+                SteamUtils.LeftMouseClickSlow(rect.Left+65,rect.Top+175);
                 await Task.Delay(2000);
-                SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 1.14),
-                    (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 95));
-                SteamUtils.SetForegroundWindow(handler);
-                await Task.Delay(2000);
-                SteamUtils.LeftMouseClickSlow(rect.Right - Math.Abs(rect.Left - rect.Right) / 2 + 100, (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 96));
-                SteamUtils.SetForegroundWindow(handler);
-                await Task.Delay(7000);
+                SteamUtils.LeftMouseClickSlow(rect.Left + 217, rect.Top + 242);
+                await Task.Delay(1000);
+                SteamUtils.LeftMouseClickSlow(rect.Left + 320, rect.Top + 303);
+                await Task.Delay(1000);
+                SteamUtils.LeftMouseClickSlow(rect.Left + 100, rect.Top + 534);
+                await Task.Delay(10000);
                 SteamUtils.SendEsc(handler, VirtualInputMethod.SendMessage);
                 await Task.Delay(2000);
-                SteamUtils.LeftMouseClickSlow(rect.Right - 40, rect.Top + 47);
-                await Task.Delay(2000);
-                SteamUtils.LeftMouseClickSlow((int)(rect.Right - Math.Abs(rect.Left - rect.Right) / 2), (int)(rect.Top + Math.Abs(rect.Bottom - rect.Top) / 100 * 46));
+
+                SteamUtils.MoveWindow(handler, 350, 150, 800, 600, true);
+                SteamUtils.GetWindowRect(handler, ref rect);
+
+                await Task.Delay(1000);
+                SteamUtils.LeftMouseClickSlow(rect.Left + 762, rect.Top + 47);
                 await Task.Delay(2000);
 
                 //Копируем id сервера после настройки мастер аккаунта
@@ -517,7 +542,7 @@ namespace BananaShooterFarm.Core
 
         public static async Task<bool> SettingStandardAccount(Account account)
         {
-            await Task.Delay(2000);
+            await Task.Delay(6000);
             StringBuilder parametersBuilder = new StringBuilder();
 
             parametersBuilder.Append($"/box:{account.SteamGuardAccount.AccountName} steam://joinlobby/1949740/{CurrentServerId}");
@@ -536,7 +561,7 @@ namespace BananaShooterFarm.Core
             }
             catch { NLogger.Log.Error($"Не удачная попытка входа на сервер для аккаунта {account.SteamGuardAccount.AccountName}"); }
 
-            await Task.Delay(6000);
+            await Task.Delay(2000);
 
             return true;
         }
