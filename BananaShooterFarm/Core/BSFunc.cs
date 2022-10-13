@@ -155,9 +155,7 @@ namespace BananaShooterFarm.Core
 
         public static async Task<bool> CheckingAndFixRunningAccounts(ObservableCollection<AccountStats> accStats)
         {
-            var r = new Random();
-
-            foreach (var account in accStats.OrderBy(x => r.Next()))
+            foreach (var account in accStats)
             {
                 try
                 {

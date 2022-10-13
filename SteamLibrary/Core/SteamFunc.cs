@@ -43,7 +43,7 @@ namespace SteamLibrary.Core
 
             StringBuilder parametersBuilder = new StringBuilder();
 
-            parametersBuilder.Append($" -silent -login {account.SteamGuardAccount.AccountName} {account.Password}");
+            parametersBuilder.Append($" -silent -login {account.SteamGuardAccount.AccountName} {account.Password} -noreactlogin");
 
 
             ProcessStartInfo startInfo = new ProcessStartInfo
