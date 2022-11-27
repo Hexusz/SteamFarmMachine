@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -279,14 +280,19 @@ namespace SteamLibrary.Core
             try
             {
                 string url = $"https://steamcommunity.com/inventory/{steamId}/{appId}/{contextId}";
-                HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
-                HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-                string response;
-                using (StreamReader streamReader = new StreamReader(httpWebResponse.GetResponseStream()))
+
+                using var client = new HttpClient();
+
+                var result = client.GetAsync(url);
+                var body = result.Result.Content.ReadAsStringAsync().Result;
+
+                if (result.Result.StatusCode == HttpStatusCode.TooManyRequests)
                 {
-                    response = streamReader.ReadToEnd();
+                    NLogger.Log.Warn("Ошибка при получении списка предметов: TooManyRequests");
+                    return 0;
                 }
-                var totalInventoryCount = JsonConvert.DeserializeObject<TotalInventoryCount>(response);
+
+                var totalInventoryCount = JsonConvert.DeserializeObject<TotalInventoryCount>(body);
                 return totalInventoryCount.Total_Inventory_Count;
             }
             catch
