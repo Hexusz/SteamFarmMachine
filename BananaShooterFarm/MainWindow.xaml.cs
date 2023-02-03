@@ -88,7 +88,6 @@ namespace BananaShooterFarm
             }
 
             timerCheckItems = new Timer { Interval = 31000 };
-            timerCheckItems.Elapsed += CheckItemsTimer;
             timerCheckItems.Start();
 
             timerCheckAccounts = new Timer { Interval = 5000 };
@@ -123,41 +122,6 @@ namespace BananaShooterFarm
 
             updateNow = false;
 
-        }
-
-        private void CheckItemsTimer(Object source, ElapsedEventArgs e)
-        {
-            try
-            {
-                var currentAccount = BSFunc.Accounts[currentCheckItems].SteamGuardAccount;
-
-                var oldAccItems = BSFunc.AccItems
-                    .FirstOrDefault(x => x.Key == currentAccount.AccountName).Value;
-
-                var currentAccountItems =
-                    SteamFunc.GetItemsCount(currentAccount.Session.SteamID.ToString(), "1949740", "2");
-
-                var difference = currentAccountItems - oldAccItems;
-
-                if (difference != 0)
-                {
-                    BSFunc.AccountStatses.FirstOrDefault(x => x.Account == currentAccount.AccountName).Items = difference;
-                }
-
-            }
-            catch (Exception exception)
-            {
-                NLogger.Log.Error("Ошибка получения списка предметов " + exception);
-            }
-
-            if (currentCheckItems < BSFunc.Accounts.Count - 1)
-            {
-                currentCheckItems++;
-            }
-            else
-            {
-                currentCheckItems = 0;
-            }
         }
 
         private void SetMaster(object sender, RoutedEventArgs e)

@@ -1,11 +1,15 @@
 ﻿using SteamLibrary.Core;
 using SteamLibrary.Entities;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
+using FlaUI.UIA3;
 using Win32Interop.WinHandles;
 
 namespace SteamLibrary
@@ -38,6 +42,9 @@ namespace SteamLibrary
         public static extern bool SetForegroundWindow(IntPtr hWnd);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        static extern IntPtr SendMessage(IntPtr hWnd, UInt32 Msg, IntPtr wParam, [Out] StringBuilder lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr SendMessage(IntPtr hWnd, int Msg, int wParam, IntPtr lParam);
 
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -57,6 +64,10 @@ namespace SteamLibrary
         static extern IntPtr GetDC(IntPtr hwnd);
         [DllImport("user32.dll")]
         static extern Int32 ReleaseDC(IntPtr hwnd, IntPtr hdc);
+        delegate bool EnumThreadDelegate(IntPtr hWnd, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        static extern bool EnumThreadWindows(int dwThreadId, EnumThreadDelegate lpfn, IntPtr lParam);
 
         public struct POINT
         {
@@ -77,6 +88,8 @@ namespace SteamLibrary
             public int Bottom { get; set; }
         }
 
+        public const int WM_GETTEXT = 0xD;
+        public const int WM_GETTEXTLENGTH = 0xE;
         public const int WM_KEYDOWN = 0x0100;
         public const int WM_KEYUP = 0x0101;
         public const int WM_CHAR = 0x0102;
@@ -91,14 +104,103 @@ namespace SteamLibrary
 
         public static int API_KEY_LENGTH = 32;
 
-        public static WindowHandle GetSteamLoginWindow()
+        public static WindowHandle GetSteamLoginWindow(Process process)
         {
-            return TopLevelWindowUtils.FindWindow(wh =>
-                wh.GetClassName().Equals("vguiPopupWindow") &&
-                (wh.GetWindowText().Contains("Steam") &&
-                 !wh.GetWindowText().Contains("-") &&
-                 !wh.GetWindowText().Contains("—") &&
-                 wh.GetWindowText().Length > 5));
+            IEnumerable<IntPtr> windows = EnumerateProcessWindowHandles(process);
+
+            foreach (IntPtr windowHandle in windows)
+            {
+                string text = GetWindowTextRaw(windowHandle);
+
+                if ((text.Contains("Steam") && text.Length > 5) || text.Equals("蒸汽平台登录"))
+                {
+                    return new WindowHandle(windowHandle);
+                }
+            }
+
+            return WindowHandle.Invalid;
+        }
+
+        private static string GetWindowTextRaw(IntPtr hwnd)
+        {
+            // Allocate correct string length first
+            int length = (int)SendMessage(hwnd, WM_GETTEXTLENGTH, 0, IntPtr.Zero);
+            StringBuilder sb = new StringBuilder(length + 1);
+            SendMessage(hwnd, WM_GETTEXT, (IntPtr)sb.Capacity, sb);
+            return sb.ToString();
+        }
+
+        private static IEnumerable<IntPtr> EnumerateProcessWindowHandles(Process process)
+        {
+            var handles = new List<IntPtr>();
+
+            foreach (ProcessThread thread in process.Threads)
+                EnumThreadWindows(thread.Id, (hWnd, lParam) => { handles.Add(hWnd); return true; }, IntPtr.Zero);
+
+            return handles;
+        }
+
+        public static bool TryCodeEntry(WindowHandle loginWindow, string secret)
+        {
+            if (!loginWindow.IsValid)
+            {
+                return false;
+            }
+
+            SetForegroundWindow(loginWindow.RawPtr);
+
+            using (var automation = new UIA3Automation())
+            {
+                AutomationElement window = automation.FromHandle(loginWindow.RawPtr);
+
+                if (window == null)
+                {
+                    return false;
+                }
+
+                AutomationElement document = window.FindFirstDescendant(e => e.ByControlType(ControlType.Document));
+
+                if (document == null || document.FindAllChildren().Length == 0)
+                {
+                    return false;
+                }
+
+                int childNum = document.FindAllChildren().Length;
+
+                if (childNum == 3 || childNum == 4)
+                {
+                    return false;
+                }
+
+                AutomationElement[] elements = document.FindAllChildren(e => e.ByControlType(ControlType.Edit));
+
+                if (elements != null)
+                {
+                    if (elements.Length == 5)
+                    {
+                        string code = SteamFunc.GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), secret);
+
+                        try
+                        {
+                            for (int i = 0; i < elements.Length; i++)
+                            {
+                                TextBox textBox = elements[i].AsTextBox();
+                                textBox.Focus();
+                                textBox.WaitUntilEnabled();
+                                textBox.Text = code[i].ToString();
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         public static WindowHandle GetSteamGuardWindow()
@@ -143,7 +245,7 @@ namespace SteamLibrary
                 // Wait for valid process id from handle.
                 while (procId == 0)
                 {
-                    Thread.Sleep(10);
+                    Thread.Sleep(100);
                     GetWindowThreadProcessId(windowHandle.RawPtr, out procId);
                 }
 

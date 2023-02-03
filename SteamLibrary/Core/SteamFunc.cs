@@ -12,6 +12,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Win32Interop.WinHandles;
 
 namespace SteamLibrary.Core
 {
@@ -44,9 +45,9 @@ namespace SteamLibrary.Core
 
             StringBuilder parametersBuilder = new StringBuilder();
 
-            parametersBuilder.Append($" -silent -login {account.SteamGuardAccount.AccountName} {account.Password} -noreactlogin");
+            parametersBuilder.Append($" -silent -login {account.SteamGuardAccount.AccountName} {account.Password}");
 
-
+            
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 UseShellExecute = true,
@@ -55,84 +56,48 @@ namespace SteamLibrary.Core
                 Arguments = parametersBuilder.ToString()
             };
 
+            Process steamProcess;
+
             try
             {
-                Process steamProcess = Process.Start(startInfo);
+                steamProcess = Process.Start(startInfo);
                 NLogger.Log.Info("Steam запущен");
             }
-            catch (Exception ex)
+            catch (Exception m)
             {
-                NLogger.Log.Warn("Не удалось запустить Steam " + ex.Message);
                 return false;
             }
 
-            var t = Type2Fa(account, 0);
+            var t = Type2Fa(account, 0, steamProcess);
             var res = await t;
             NLogger.Log.Info($"{(res ? ("Успешная авторизация " + account.SteamGuardAccount.AccountName) : ("Ошибка авторизации " + account.SteamGuardAccount.AccountName))}");
 
             return res;
         }
 
-        private static async Task<bool> Type2Fa(Account account, int tryCount)
+        private static async Task<bool> Type2Fa(Account account, int tryCount, Process steamProcess)
         {
-            var steamLoginWindow = SteamUtils.GetSteamLoginWindow();
-            var steamGuardWindow = SteamUtils.GetSteamGuardWindow();
+            var steamLoginWindow = SteamUtils.GetSteamLoginWindow(steamProcess);
 
-            while (!steamLoginWindow.IsValid || !steamGuardWindow.IsValid)
+
+            while (!steamLoginWindow.IsValid)
             {
-                Thread.Sleep(10);
-                steamLoginWindow = SteamUtils.GetSteamLoginWindow();
-                steamGuardWindow = SteamUtils.GetSteamGuardWindow();
-
-                var steamWarningWindow = SteamUtils.GetSteamWarningWindow();
-                if (steamWarningWindow.IsValid)
-                {
-                    return false;
-                }
+                Thread.Sleep(100);
+                steamLoginWindow = SteamUtils.GetSteamLoginWindow(steamProcess);
             }
 
-            Process steamGuardProcess = SteamUtils.WaitForSteamProcess(steamGuardWindow);
-            steamGuardProcess.WaitForInputIdle();
-
-            Thread.Sleep(3000);
-
-            NLogger.Log.Info("Вводим 2FA код");
-
-            SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
-            Thread.Sleep(50);
-
-            var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), account.SteamGuardAccount.SharedSecret);
-            foreach (char c in code2Fa)
-            {
-                SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
-                Thread.Sleep(50);
-
-                SteamUtils.SendCharacter(steamGuardWindow.RawPtr, VirtualInputMethod.SendMessage, c);
-            }
-
-            SteamUtils.SetForegroundWindow(steamGuardWindow.RawPtr);
-
-            Thread.Sleep(10);
-
-            SteamUtils.SendEnter(steamGuardWindow.RawPtr, VirtualInputMethod.SendMessage);
 
             Thread.Sleep(5000);
 
-            steamGuardWindow = SteamUtils.GetSteamGuardWindow();
+            NLogger.Log.Info("Вводим 2FA код");
 
-            if (tryCount <= _maxRetry && steamGuardWindow.IsValid)
-            {
-                NLogger.Log.Info("2FA Ошибка кода, повтор");
-                var t = Type2Fa(account, tryCount + 1);
-                return await t;
-            }
-            else if (tryCount == _maxRetry + 1 && steamGuardWindow.IsValid)
-            {
-                NLogger.Log.Error("2FA Ошибка, проверьте данные аккаунта");
-                return false;
-            }
+            Thread.Sleep(50);
 
-            return !steamGuardWindow.IsValid;
+            var code2Fa = GenerateSteamGuardCodeForTime(AppFunc.GetSystemUnixTime(), account.SteamGuardAccount.SharedSecret);
+
+            SteamUtils.TryCodeEntry(steamLoginWindow, account.SteamGuardAccount.SharedSecret);
+
+            return true;
         }
 
         public static async Task<bool> SandLogin(Account account, string sandSteamPath, string sandPath)
@@ -222,7 +187,7 @@ namespace SteamLibrary.Core
             if (tryCount <= _maxRetry && steamGuardWindow.IsValid)
             {
                 NLogger.Log.Info("2FA Ошибка кода, повтор");
-                var t = Type2Fa(account, tryCount + 1);
+                var t = Type2Fa(account, tryCount + 1, new Process());
                 return await t;
             }
             else if (tryCount == _maxRetry + 1 && steamGuardWindow.IsValid)
@@ -273,33 +238,6 @@ namespace SteamLibrary.Core
                 return null; //Change later, catch-alls are bad!
             }
             return Encoding.UTF8.GetString(codeArray);
-        }
-
-        public static int GetItemsCount(string steamId, string appId, string contextId)
-        {
-            try
-            {
-                string url = $"https://steamcommunity.com/inventory/{steamId}/{appId}/{contextId}";
-
-                using var client = new HttpClient();
-
-                var result = client.GetAsync(url);
-                var body = result.Result.Content.ReadAsStringAsync().Result;
-
-                if (result.Result.StatusCode == HttpStatusCode.TooManyRequests)
-                {
-                    NLogger.Log.Warn("Ошибка при получении списка предметов: TooManyRequests");
-                    return 0;
-                }
-
-                var totalInventoryCount = JsonConvert.DeserializeObject<TotalInventoryCount>(body);
-                return totalInventoryCount.Total_Inventory_Count;
-            }
-            catch
-            {
-                return -1;
-            }
-
         }
 
         public class TotalInventoryCount

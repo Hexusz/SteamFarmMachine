@@ -573,9 +573,6 @@ namespace BananaShooterFarm.Core
 
         public static async Task LaunchGame(Account account)
         {
-            if (!AccItems.ContainsKey(account.SteamGuardAccount.AccountName))
-                AccItems.Add(account.SteamGuardAccount.AccountName, SteamFunc.GetItemsCount(account.SteamGuardAccount.Session.SteamID.ToString(), "1949740", "2"));
-
             var currentAcc = AccountStatses.FirstOrDefault(x => x.Account == account.SteamGuardAccount.AccountName);
 
             await Task.Delay(1000);
