@@ -1,4 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
+using FlaUI.UIA3;
+using Newtonsoft.Json;
 using SteamLibrary.Entities;
 using System;
 using System.Collections.Generic;
@@ -45,7 +48,7 @@ namespace SteamLibrary.Core
 
             StringBuilder parametersBuilder = new StringBuilder();
 
-            parametersBuilder.Append($" -silent -vgui -login {account.SteamGuardAccount.AccountName} {account.Password}");
+            parametersBuilder.Append($" -silent -login {account.SteamGuardAccount.AccountName} {account.Password}");
 
             
             ProcessStartInfo startInfo = new ProcessStartInfo
@@ -68,6 +71,28 @@ namespace SteamLibrary.Core
                 return false;
             }
 
+            WindowHandle steamLoginWindow = SteamUtils.GetSteamLoginWindow();
+
+            while (!steamLoginWindow.IsValid)
+            {
+                Thread.Sleep(100);
+                steamLoginWindow = SteamUtils.GetSteamLoginWindow();
+            }
+
+            LoginWindowState state = LoginWindowState.None;
+
+            while (state != LoginWindowState.Success && state != LoginWindowState.Code)
+            {
+                if (steamProcess.HasExited || state == LoginWindowState.Error)
+                {
+                    return false;
+                }
+
+                Thread.Sleep(100);
+
+                state = TryCredentialsEntry(steamLoginWindow, account.SteamGuardAccount.AccountName, account.Password, false);
+            }
+
             var t = Type2Fa(account, 0, steamProcess);
             var res = await t;
             NLogger.Log.Info($"{(res ? ("Успешная авторизация " + account.SteamGuardAccount.AccountName) : ("Ошибка авторизации " + account.SteamGuardAccount.AccountName))}");
@@ -75,15 +100,127 @@ namespace SteamLibrary.Core
             return res;
         }
 
+        public static LoginWindowState TryCredentialsEntry(WindowHandle loginWindow, string username, string password, bool remember)
+        {
+            if (!loginWindow.IsValid)
+            {
+                return LoginWindowState.Invalid;
+            }
+
+            SteamUtils.SetForegroundWindow(loginWindow.RawPtr);
+
+            using (var automation = new UIA3Automation())
+            {
+                try
+                {
+                    AutomationElement window = automation.FromHandle(loginWindow.RawPtr);
+
+                    if (window == null)
+                    {
+                        return LoginWindowState.Invalid;
+                    }
+
+                    AutomationElement document = window.FindFirstDescendant(e => e.ByControlType(ControlType.Document));
+                    AutomationElement[] children = document.FindAllChildren();
+
+                    if (document == null || children.Length == 0)
+                    {
+                        return LoginWindowState.Invalid;
+                    }
+
+                    AutomationElement[] inputs = document.FindAllChildren(e => e.ByControlType(ControlType.Edit));
+                    AutomationElement[] buttons = document.FindAllChildren(e => e.ByControlType(ControlType.Button));
+                    AutomationElement[] groups = document.FindAllChildren(e => e.ByControlType(ControlType.Group));
+                    AutomationElement[] images = document.FindAllChildren(e => e.ByControlType(ControlType.Image));
+
+                    if (inputs != null)
+                    {
+                        if (inputs.Length == 0 && images.Length > 0 && images[0].AutomationId == "Layer_2")
+                        {
+                            Button addAccountButton = groups[groups.Length - 1].AsButton();
+                            addAccountButton.Invoke();
+
+                            Console.WriteLine("Window State: Selection");
+                            return LoginWindowState.Selection;
+                        }
+                        if (inputs.Length == 0 && buttons.Length == 1)
+                        {
+                            Console.WriteLine("Window State: Error");
+                            return LoginWindowState.Error;
+                        }
+
+                        if (inputs.Length == 5)
+                        {
+                            Console.WriteLine("Window State: Code");
+                            return LoginWindowState.Code;
+                        }
+
+                        if (inputs.Length == 2 && buttons.Length == 1 && groups.Length == 1)
+                        {
+                            Button signInButton = buttons[0].AsButton();
+
+                            if (signInButton.IsEnabled)
+                            {
+                                SteamUtils.SetForegroundWindow(loginWindow.RawPtr);
+
+                                TextBox usernameBox = inputs[0].AsTextBox();
+                                usernameBox.WaitUntilEnabled();
+                                usernameBox.Text = username;
+
+                                TextBox passwordBox = inputs[1].AsTextBox();
+                                passwordBox.WaitUntilEnabled();
+                                passwordBox.Text = password;
+
+                                Button checkBoxButton = groups[0].AsButton();
+                                bool isChecked = checkBoxButton.FindFirstChild(e => e.ByControlType(ControlType.Image)) != null;
+
+                                if (remember != isChecked)
+                                {
+                                    checkBoxButton.Focus();
+                                    checkBoxButton.WaitUntilEnabled();
+                                    checkBoxButton.Invoke();
+                                }
+
+                                signInButton.Focus();
+                                signInButton.WaitUntilEnabled();
+                                signInButton.Invoke();
+                            }
+
+                            return LoginWindowState.Success;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    return LoginWindowState.Invalid;
+                }
+            }
+
+            return LoginWindowState.Invalid;
+        }
+
+        public enum LoginWindowState
+        {
+            None,
+            Invalid,
+            Error,
+            Selection,
+            Login,
+            Code,
+            Loading,
+            Success
+        }
+
         private static async Task<bool> Type2Fa(Account account, int tryCount, Process steamProcess)
         {
-            var steamLoginWindow = SteamUtils.GetSteamLoginWindow(steamProcess);
+            var steamLoginWindow = SteamUtils.GetSteamLoginWindow();
 
 
             while (!steamLoginWindow.IsValid)
             {
                 Thread.Sleep(100);
-                steamLoginWindow = SteamUtils.GetSteamLoginWindow(steamProcess);
+                steamLoginWindow = SteamUtils.GetSteamLoginWindow();
             }
 
 

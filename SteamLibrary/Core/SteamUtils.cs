@@ -104,17 +104,28 @@ namespace SteamLibrary
 
         public static int API_KEY_LENGTH = 32;
 
-        public static WindowHandle GetSteamLoginWindow(Process process)
+        public static WindowHandle GetSteamLoginWindow()
         {
-            IEnumerable<IntPtr> windows = EnumerateProcessWindowHandles(process);
+            WindowHandle window = GetSteamLoginWindow("Steam");
+            if (window.IsValid) { return window; }
+            return GetSteamLoginWindow("steamwebhelper");
+        }
 
-            foreach (IntPtr windowHandle in windows)
+        public static WindowHandle GetSteamLoginWindow(string processName)
+        {
+            Process[] steamProcess = Process.GetProcessesByName(processName);
+            foreach (Process process in steamProcess)
             {
-                string text = GetWindowTextRaw(windowHandle);
+                IEnumerable<IntPtr> windows = EnumerateProcessWindowHandles(process);
 
-                if ((text.Contains("Steam") && text.Length > 5) || text.Equals("蒸汽平台登录"))
+                foreach (IntPtr windowHandle in windows)
                 {
-                    return new WindowHandle(windowHandle);
+                    string text = GetWindowTextRaw(windowHandle);
+
+                    if ((text.Contains("Steam") && text.Length > 5) || text.Equals("蒸汽平台登录"))
+                    {
+                        return new WindowHandle(windowHandle);
+                    }
                 }
             }
 
