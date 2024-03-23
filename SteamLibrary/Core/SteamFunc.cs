@@ -120,7 +120,26 @@ namespace SteamLibrary.Core
                         return LoginWindowState.Invalid;
                     }
 
-                    AutomationElement document = window.FindFirstDescendant(e => e.ByControlType(ControlType.Document));
+                    AutomationElement document = null;
+                    int attempts = 0;
+
+                    while (document == null && attempts < 60)
+                    {
+                        document = window.FindFirstDescendant(e => e.ByControlType(ControlType.Document));
+
+                        if (document == null)
+                        {
+                            // Подождать некоторое время перед следующей попыткой
+                            Thread.Sleep(1000); // 1 секунда
+                            attempts++;
+                        }
+                    }
+
+                    if (document == null)
+                    {
+                        throw new Exception("Элемент не был найден после 60 попыток.");
+                    }
+
                     AutomationElement[] children = document.FindAllChildren();
 
                     if (document == null || children.Length == 0)
